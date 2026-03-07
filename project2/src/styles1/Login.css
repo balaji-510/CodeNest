@@ -1,0 +1,221 @@
+.loginpage {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  background: radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(129, 140, 248, 0.1) 0%, transparent 50%);
+  position: relative;
+  overflow: hidden;
+}
+
+.left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8%;
+  z-index: 1;
+}
+
+.titlebox {
+  animation: fadeInUp 1s ease-out;
+}
+
+.login-title {
+  font-size: clamp(3rem, 10vw, 8rem);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 1rem;
+  background: linear-gradient(to right, #fff, var(--primary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-title span {
+  color: var(--primary-color);
+  -webkit-text-fill-color: initial;
+}
+
+.login-subtitle {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 1;
+}
+
+.loginbox {
+  width: 100%;
+  max-width: 450px;
+  padding: 3rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: fadeInUp 1s ease-out 0.2s backwards;
+}
+
+.loginbox h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.role-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+}
+
+.role-btn {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-btn.active {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+}
+
+.role-btn:not(.active):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.loginbox form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.loginbox input {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  transition: var(--transition-smooth);
+}
+
+.loginbox input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+}
+
+.loginbox button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  margin-top: 1rem;
+}
+
+.loginbox button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3);
+}
+
+.loginbox p {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.loginbox p:hover {
+  color: var(--primary-color);
+}
+
+@media (max-width: 1024px) {
+  .loginpage {
+    flex-direction: column;
+  }
+
+  .left {
+    padding: 4rem 2rem 2rem;
+    text-align: center;
+    align-items: center;
+  }
+
+  .right {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginbox {
+    padding: 2rem;
+  }
+}
+
+.error-message {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}

@@ -1,0 +1,183 @@
+import React from 'react';
+import Navbar from '../Components/Navbar';
+import Footer from '../Components/Footer';
+import { Mail, Phone, MapPin, Send, MessageCircle } from 'lucide-react';
+import '../styles1/Hero.css';
+
+const Contact = () => {
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        alert('Message sent successfully!');
+    };
+
+    return (
+        <div className="contact-page animate-fade-in">
+            <Navbar />
+            <main className="page-section">
+                <header className="section-title">
+                    <h1>Get in <span>Touch</span></h1>
+                    <p>Have questions or feedback? We'd love to hear from you.</p>
+                </header>
+
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1fr',
+                    gap: '4rem',
+                    alignItems: 'start'
+                }}>
+                    <section className="glass-effect" style={{ padding: '3rem', borderRadius: '24px' }}>
+                        <h2 style={{ marginBottom: '2rem' }}>Send us a Message</h2>
+                        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Full Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="John Doe"
+                                        style={{
+                                            width: '100%',
+                                            padding: '1rem',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px solid var(--glass-border)',
+                                            borderRadius: '12px',
+                                            color: 'white',
+                                            outline: 'none'
+                                        }}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Email Address</label>
+                                    <input
+                                        type="email"
+                                        placeholder="john@example.com"
+                                        style={{
+                                            width: '100%',
+                                            padding: '1rem',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px solid var(--glass-border)',
+                                            borderRadius: '12px',
+                                            color: 'white',
+                                            outline: 'none'
+                                        }}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Subject</label>
+                                <select style={{
+                                    width: '100%',
+                                    padding: '1rem',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--glass-border)',
+                                    borderRadius: '12px',
+                                    color: 'white',
+                                    outline: 'none'
+                                }}>
+                                    <option value="general">General Inquiry</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="feedback">Feedback</option>
+                                    <option value="business">Business Partnership</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Message</label>
+                                <textarea
+                                    rows="5"
+                                    placeholder="Tell us what's on your mind..."
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid var(--glass-border)',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        outline: 'none',
+                                        resize: 'none'
+                                    }}
+                                    required
+                                ></textarea>
+                            </div>
+                            <button className="magnetic-hover" style={{
+                                padding: '1rem 2rem',
+                                background: 'var(--primary-color)',
+                                color: 'white',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <Send size={18} /> Send Message
+                            </button>
+                        </form>
+                    </section>
+
+                    <section style={{ display: 'grid', gap: '2rem' }}>
+                        <div className="glass-effect" style={{ padding: '2rem', borderRadius: '24px' }}>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Contact Information</h3>
+                            <div style={{ display: 'grid', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ padding: '0.75rem', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '12px', color: 'var(--primary-color)' }}>
+                                        <Mail size={20} />
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Email</p>
+                                        <p>support@codenest.io</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ padding: '0.75rem', background: 'rgba(129, 140, 248, 0.1)', borderRadius: '12px', color: 'var(--secondary-color)' }}>
+                                        <Phone size={20} />
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Phone</p>
+                                        <p>+1 (555) 000-0000</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ padding: '0.75rem', background: 'rgba(192, 132, 252, 0.1)', borderRadius: '12px', color: 'var(--accent-color)' }}>
+                                        <MapPin size={20} />
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Location</p>
+                                        <p>San Francisco, CA</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="glass-effect" style={{
+                            padding: '2rem',
+                            borderRadius: '24px',
+                            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(192, 132, 252, 0.1))',
+                            border: '1px solid var(--primary-color)'
+                        }}>
+                            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <MessageCircle size={20} /> Live Support
+                            </h3>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                                Need immediate help? Our support team is available 24/7 for premium members.
+                            </p>
+                            <button className="magnetic-hover" style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                background: 'white',
+                                color: 'black',
+                                borderRadius: '12px',
+                                fontWeight: '600'
+                            }}>
+                                Start Chat
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    );
+};
+
+export default Contact;
