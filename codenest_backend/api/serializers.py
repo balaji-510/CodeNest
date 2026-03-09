@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, Problem, Submission, Analytics, TopicProgress, Context, ContextProblem, Notification
+from .models import (
+    UserProfile, Problem, Submission, Analytics, TopicProgress, 
+    Context, ContextProblem, Notification, Achievement, AchievementDefinition, 
+    PlatformAccount, TestCase, Contest, ContestParticipant, ContestSubmission
+)
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -35,7 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'role', 'teacher_code', 'branch']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'role', 'teacher_code', 'branch', 'batch']
     
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -67,6 +71,10 @@ class UserSerializer(serializers.ModelSerializer):
         
         # Create UserProfile with the role and branch
         UserProfile.objects.create(user=user, role=role, branch=branch, batch=batch)
+        
+        # Create UserStats for the new user
+        from .models import UserStats
+        UserStats.objects.create(user=user, score=0, problems_solved=0)
         
         return user
 
@@ -129,3 +137,181 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'recipient', 'title', 'message', 'link', 'is_read', 'created_at']
         read_only_fields = ['created_at']
+
+
+# New Serializers for Enhanced Features
+
+class AchievementDefinitionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AchievementDefinition
+        fields = ['id', 'name', 'description', 'icon', 'category', 'requirement', 'points', 'is_active']
+        read_only_fields = ['id']
+
+
+class AchievementSerializer(serializers.ModelSerializer):
+    achievement_def = AchievementDefinitionSerializer(read_only=True)
+    
+    class Meta:
+        model = Achievement
+        fields = ['id', 'achievement_def', 'type', 'title', 'description', 'icon', 'progress', 'target', 'earned_at']
+        read_only_fields = ['earned_at']
+
+
+class AchievementProgressSerializer(serializers.Serializer):
+    """Serializer for achievement progress"""
+    achievement = AchievementDefinitionSerializer()
+    earned = serializers.BooleanField()
+    earned_at = serializers.DateTimeField(allow_null=True)
+    progress = serializers.IntegerField()
+    target = serializers.IntegerField()
+    percentage = serializers.SerializerMethodField()
+    
+    def get_percentage(self, obj):
+        if obj['target'] == 0:
+            return 0
+        return min(100, int((obj['progress'] / obj['target']) * 100))
+
+
+class PlatformAccountSerializer(serializers.ModelSerializer):
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+    
+    class Meta:
+        model = PlatformAccount
+        fields = ['id', 'platform', 'platform_display', 'handle', 'is_verified', 
+                  'rating', 'problems_solved', 'rank', 'last_synced', 'created_at']
+        read_only_fields = ['is_verified', 'rating', 'problems_solved', 'rank', 'last_synced', 'created_at']
+
+
+class SubmissionDetailSerializer(serializers.ModelSerializer):
+    """Detailed submission serializer with code"""
+    problem_title = serializers.ReadOnlyField(source='problem.title')
+    problem_difficulty = serializers.ReadOnlyField(source='problem.difficulty')
+    username = serializers.ReadOnlyField(source='user.username')
+    language_display = serializers.CharField(source='get_language_display', read_only=True)
+    
+    class Meta:
+        model = Submission
+        fields = ['id', 'user', 'username', 'problem', 'problem_title', 'problem_difficulty',
+                  'status', 'code', 'language', 'language_display', 'passed_testcases', 
+                  'total_testcases', 'execution_time_ms', 'memory_used_kb', 'error_message',
+                  'test_results', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+
+
+# All models are now imported at the top of the file
+
+
+
+class TestCaseSerializer(serializers.ModelSerializer):
+    """Serializer for test cases"""
+    class Meta:
+        model = TestCase
+        fields = ['id', 'problem', 'input_data', 'expected_output', 'is_hidden', 'created_at']
+        read_only_fields = ['created_at']
+
+
+
+class ContestSerializer(serializers.ModelSerializer):
+    """Serializer for Contest model"""
+    creator_name = serializers.ReadOnlyField(source='creator.username')
+    status = serializers.ReadOnlyField()
+    time_remaining = serializers.ReadOnlyField()
+    participant_count = serializers.SerializerMethodField()
+    problems_count = serializers.SerializerMethodField()
+    problem_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Contest
+        fields = [
+            'id', 'title', 'description', 'creator', 'creator_name',
+            'start_time', 'end_time', 'duration_minutes', 'status',
+            'time_remaining', 'is_public', 'rules', 'participant_count',
+            'problems_count', 'problem_ids', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['creator', 'created_at', 'updated_at']
+
+    def get_participant_count(self, obj):
+        return obj.participants.count()
+
+    def get_problems_count(self, obj):
+        return obj.problems.count()
+
+    def create(self, validated_data):
+        problem_ids = validated_data.pop('problem_ids', [])
+        contest = Contest.objects.create(**validated_data)
+
+        if problem_ids:
+            from .models import Problem
+            problems = Problem.objects.filter(id__in=problem_ids)
+            contest.problems.set(problems)
+
+        return contest
+
+
+
+
+class ContestDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for Contest with problems"""
+    creator_name = serializers.ReadOnlyField(source='creator.username')
+    status = serializers.ReadOnlyField()
+    time_remaining = serializers.ReadOnlyField()
+    problems = ProblemSerializer(many=True, read_only=True)
+    participant_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Contest
+        fields = [
+            'id', 'title', 'description', 'creator', 'creator_name',
+            'start_time', 'end_time', 'duration_minutes', 'status',
+            'time_remaining', 'is_public', 'rules', 'problems',
+            'participant_count', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['creator', 'created_at', 'updated_at']
+    
+    def get_participant_count(self, obj):
+        return obj.participants.count()
+
+
+class ContestParticipantSerializer(serializers.ModelSerializer):
+    """Serializer for Contest Participant"""
+    username = serializers.ReadOnlyField(source='user.username')
+    user_id = serializers.ReadOnlyField(source='user.id')
+    
+    class Meta:
+        model = ContestParticipant
+        fields = [
+            'id', 'user', 'user_id', 'username', 'score',
+            'problems_solved', 'penalty', 'rank', 'joined_at',
+            'last_submission_time'
+        ]
+        read_only_fields = ['score', 'problems_solved', 'penalty', 'rank', 'joined_at']
+
+
+class ContestSubmissionSerializer(serializers.ModelSerializer):
+    """Serializer for Contest Submission"""
+    username = serializers.ReadOnlyField(source='participant.user.username')
+    problem_title = serializers.ReadOnlyField(source='problem.title')
+    
+    class Meta:
+        model = ContestSubmission
+        fields = [
+            'id', 'contest', 'participant', 'username', 'problem',
+            'problem_title', 'submission', 'points', 'time_taken',
+            'is_accepted', 'created_at'
+        ]
+        read_only_fields = ['points', 'time_taken', 'is_accepted', 'created_at']
+
+
+class ContestLeaderboardSerializer(serializers.Serializer):
+    """Serializer for contest leaderboard"""
+    rank = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    username = serializers.CharField()
+    score = serializers.IntegerField()
+    problems_solved = serializers.IntegerField()
+    penalty = serializers.IntegerField()
+    last_submission_time = serializers.DateTimeField()

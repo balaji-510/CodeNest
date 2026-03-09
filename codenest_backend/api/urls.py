@@ -5,9 +5,10 @@ from .views import (
     init_mock_data, RegisterView, CustomTokenObtainPairView, leaderboard,
     get_verification_token, verify_leetcode_account, ContextViewSet, NotificationViewSet,
     get_daily_challenge, verify_codeforces_account, verify_codechef_account,
-    get_daily_challenge, verify_codeforces_account, verify_codechef_account,
     execute_code, get_mentor_stats, user_dashboard_stats_by_username,
-    update_profile, get_roadmap, current_user_dashboard_stats
+    update_profile, get_roadmap, current_user_dashboard_stats, platform_stats,
+    get_analytics, TestCaseViewSet, get_problem_testcases, AchievementViewSet,
+    AchievementDefinitionViewSet, get_activity_heatmap, ContestViewSet, ai_assistant
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -16,6 +17,10 @@ router.register(r'problems', ProblemViewSet)
 router.register(r'submissions', SubmissionViewSet)
 router.register(r'contexts', ContextViewSet)
 router.register(r'notifications', NotificationViewSet, basename='notification')
+router.register(r'testcases', TestCaseViewSet)
+router.register(r'achievements', AchievementViewSet, basename='achievement')
+router.register(r'achievement-definitions', AchievementDefinitionViewSet, basename='achievement-definition')
+router.register(r'contests', ContestViewSet, basename='contest')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -44,4 +49,19 @@ urlpatterns = [
     # Mentor
     path('mentor-stats/', get_mentor_stats, name='mentor-stats'),
     path('roadmap/', get_roadmap, name='get-roadmap'),
+    
+    # Platform Stats
+    path('platform-stats/', platform_stats, name='platform-stats'),
+    
+    # Analytics
+    path('analytics/', get_analytics, name='analytics'),
+    
+    # Activity Heatmap
+    path('activity-heatmap/', get_activity_heatmap, name='activity-heatmap'),
+    
+    # Test Cases
+    path('problems/<int:problem_id>/testcases/', get_problem_testcases, name='problem-testcases'),
+    
+    # AI Assistant
+    path('ai-assistant/', ai_assistant, name='ai-assistant'),
 ]

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4ov!4v#g#2!u!cj@&k2-galj@x2)%xu3ur@*pvs1-n^uumu4a_'
+SECRET_KEY = 'eef^7goz_p(w%m27q6t@sjm0sd0=531&g__=&%&q8cjaoq)e$0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -78,12 +79,8 @@ WSGI_APPLICATION = 'codenest_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'codenest_db',
-        'USER': 'root',
-        'PASSWORD': 'Yash@259',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -150,3 +147,15 @@ AUTHENTICATION_BACKENDS = [
 
 TEACHER_REGISTRATION_CODE = 'TEACHER2024'
 
+
+
+# AI Service Configuration
+# Configure at least one API key for AI-powered responses
+# Get free API keys from:
+# - Groq: https://console.groq.com/ (Recommended - Fast & Free)
+# - OpenAI: https://platform.openai.com/
+# - Google Gemini: https://makersuite.google.com/app/apikey
+
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', 'your-groq-api-key-here')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'your-api-key-here')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'your-api-key-here')

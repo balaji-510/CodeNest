@@ -74,23 +74,49 @@ class Submission(models.Model):
         ('PENDING', 'PENDING'),
         ('ACCEPTED', 'ACCEPTED'),
         ('FAILED', 'FAILED'),
+        ('RUNTIME_ERROR', 'RUNTIME_ERROR'),
+        ('TIME_LIMIT_EXCEEDED', 'TIME_LIMIT_EXCEEDED'),
+        ('MEMORY_LIMIT_EXCEEDED', 'MEMORY_LIMIT_EXCEEDED'),
+        ('COMPILATION_ERROR', 'COMPILATION_ERROR'),
     ]
-    
+
+    LANGUAGE_CHOICES = [
+        ('python', 'Python'),
+        ('java', 'Java'),
+        ('cpp', 'C++'),
+        ('javascript', 'JavaScript'),
+        ('c', 'C'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name='submissions')
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='PENDING')
+
+    # Code and Language
+    code = models.TextField(default='')
+    language = models.CharField(max_length=20, choices=LANGUAGE_CHOICES, default='python')
+
+    # Execution Results
     passed_testcases = models.IntegerField(default=0)
     total_testcases = models.IntegerField(default=0)
     execution_time_ms = models.IntegerField(null=True, blank=True)
+    memory_used_kb = models.IntegerField(null=True, blank=True)
+
+    # Error Information
+    error_message = models.TextField(blank=True, default='')
+    test_results = models.JSONField(default=list)  # Store individual test case results
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         indexes = [
             models.Index(fields=['user']),
             models.Index(fields=['problem']),
             models.Index(fields=['status']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['user', 'created_at']),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -102,6 +128,7 @@ class Submission(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.problem.title} ({self.status})"
+
 
 class UserStats(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='stats')
@@ -186,3 +213,197 @@ class Notification(models.Model):
         
     def __str__(self):
         return f"To {self.recipient.username}: {self.title}"
+
+
+class AchievementDefinition(models.Model):
+    """Achievement definitions - what achievements exist"""
+    CATEGORY_CHOICES = [
+        ('problems', 'Problem Solving'),
+        ('difficulty', 'Difficulty Mastery'),
+        ('topic', 'Topic Mastery'),
+        ('streak', 'Streaks'),
+        ('speed', 'Speed'),
+        ('time', 'Time-based'),
+        ('special', 'Special'),
+    ]
+    
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField()
+    icon = models.CharField(max_length=50)  # Emoji
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    requirement = models.JSONField()  # e.g., {"type": "problems_solved", "count": 10}
+    points = models.IntegerField(default=10)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['category', 'points']
+    
+    def __str__(self):
+        return f"{self.name} ({self.category})"
+
+
+class Achievement(models.Model):
+    """User achievements and badges"""
+    ACHIEVEMENT_TYPES = [
+        ('streak', 'Streak'),
+        ('problems', 'Problems Solved'),
+        ('contest', 'Contest'),
+        ('topic', 'Topic Master'),
+        ('speed', 'Speed'),
+        ('special', 'Special'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='achievements')
+    achievement_def = models.ForeignKey(AchievementDefinition, on_delete=models.CASCADE, null=True, blank=True, related_name='user_achievements')
+    type = models.CharField(max_length=20, choices=ACHIEVEMENT_TYPES)
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    icon = models.CharField(max_length=50)  # Emoji or icon name
+    progress = models.IntegerField(default=0)  # Current progress towards achievement
+    target = models.IntegerField(default=100)  # Target value for completion
+    earned_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-earned_at']
+        indexes = [
+            models.Index(fields=['user', 'type']),
+        ]
+        unique_together = ['user', 'achievement_def']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+
+class PlatformAccount(models.Model):
+    """Linked coding platform accounts"""
+    PLATFORM_CHOICES = [
+        ('leetcode', 'LeetCode'),
+        ('codechef', 'CodeChef'),
+        ('codeforces', 'Codeforces'),
+        ('hackerrank', 'HackerRank'),
+        ('hackerearth', 'HackerEarth'),
+        ('atcoder', 'AtCoder'),
+        ('geeksforgeeks', 'GeeksforGeeks'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='platform_accounts')
+    platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
+    handle = models.CharField(max_length=100)
+    is_verified = models.BooleanField(default=False)
+    
+    # Platform Stats
+    rating = models.IntegerField(null=True, blank=True)
+    problems_solved = models.IntegerField(default=0)
+    rank = models.IntegerField(null=True, blank=True)
+    
+    # Sync Info
+    last_synced = models.DateTimeField(null=True, blank=True)
+    api_data = models.JSONField(default=dict)  # Store raw API response
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('user', 'platform')
+        indexes = [
+            models.Index(fields=['user', 'platform']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.platform} ({self.handle})"
+
+
+class Contest(models.Model):
+    """Contest model for competitive programming contests"""
+    STATUS_CHOICES = [
+        ('upcoming', 'Upcoming'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_contests')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    duration_minutes = models.IntegerField()  # Duration in minutes
+    problems = models.ManyToManyField(Problem, related_name='contests')
+    participants = models.ManyToManyField(User, through='ContestParticipant', related_name='participated_contests')
+    is_public = models.BooleanField(default=True)
+    rules = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-start_time']
+        indexes = [
+            models.Index(fields=['start_time', 'end_time']),
+            models.Index(fields=['creator']),
+        ]
+    
+    def __str__(self):
+        return self.title
+    
+    @property
+    def status(self):
+        from django.utils import timezone
+        now = timezone.now()
+        if now < self.start_time:
+            return 'upcoming'
+        elif now > self.end_time:
+            return 'completed'
+        else:
+            return 'ongoing'
+    
+    @property
+    def time_remaining(self):
+        from django.utils import timezone
+        if self.status == 'ongoing':
+            remaining = self.end_time - timezone.now()
+            return int(remaining.total_seconds())
+        return 0
+
+
+class ContestParticipant(models.Model):
+    """Tracks contest participation and scores"""
+    contest = models.ForeignKey(Contest, on_delete=models.CASCADE, related_name='contest_participants')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contest_participations')
+    score = models.IntegerField(default=0)
+    problems_solved = models.IntegerField(default=0)
+    penalty = models.IntegerField(default=0)  # Time penalty in minutes
+    rank = models.IntegerField(null=True, blank=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_submission_time = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['contest', 'user']
+        ordering = ['-score', 'penalty']
+        indexes = [
+            models.Index(fields=['contest', 'score']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} in {self.contest.title}"
+
+
+class ContestSubmission(models.Model):
+    """Submissions made during a contest"""
+    contest = models.ForeignKey(Contest, on_delete=models.CASCADE, related_name='contest_submissions')
+    participant = models.ForeignKey(ContestParticipant, on_delete=models.CASCADE, related_name='submissions')
+    problem = models.ForeignKey(Problem, on_delete=models.CASCADE)
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
+    points = models.IntegerField(default=0)
+    time_taken = models.IntegerField()  # Minutes from contest start
+    is_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['contest', 'participant']),
+            models.Index(fields=['problem', 'is_accepted']),
+        ]
+    
+    def __str__(self):
+        return f"{self.participant.user.username} - {self.problem.title}"
