@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 import { getProblems } from "../services/api";
-import API_BASE from "../config";
 import "../styles1/Problems.css";
 
 function Problems() {
@@ -19,7 +18,7 @@ function Problems() {
     useEffect(() => {
         const userId = localStorage.getItem('user_id');
         if (userId) {
-            fetch(`${API_BASE}/api/submissions/solved_problems/?user=${userId}`, {
+            fetch(`http://localhost:8000/api/submissions/solved_problems/?user=${userId}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
             })
                 .then(r => r.ok ? r.json() : [])

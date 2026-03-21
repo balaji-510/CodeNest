@@ -42,7 +42,6 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
-!.env.production
 *.local
 *.key
 *.pem

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { Trophy, Lock, Star, Filter, Search } from 'lucide-react';
-import API_BASE from '../config';
 import '../styles1/Achievements.css';
 
 function Achievements() {
@@ -45,7 +44,7 @@ function Achievements() {
             const token = localStorage.getItem('access_token');
             
             // Fetch user's progress towards all achievements
-            const progressResponse = await fetch(`${API_BASE}/api/achievements/progress/`, {
+            const progressResponse = await fetch('http://localhost:8000/api/achievements/progress/', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

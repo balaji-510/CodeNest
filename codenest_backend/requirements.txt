@@ -1,12 +1,7 @@
-Django>=4.2,<5.0
+Django>=4.0
 djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
 requests
 python-dotenv
-psycopg2-binary
-dj-database-url
-whitenoise
-gunicorn
-gevent
 docker

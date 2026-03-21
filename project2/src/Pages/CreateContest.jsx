@@ -5,7 +5,6 @@ import { ToastContainer } from '../Components/Toast';
 import { Calendar, Clock, FileText, Users, Plus, X, Search } from 'lucide-react';
 import '../styles1/CreateContest.css';
 import { useToast } from '../hooks/useToast';
-import API_BASE from '../config';
 
 function CreateContest() {
     const navigate = useNavigate();
@@ -32,7 +31,7 @@ function CreateContest() {
     const fetchProblems = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_BASE}/api/problems/`, {
+            const response = await fetch('http://localhost:8000/api/problems/', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -83,7 +82,7 @@ function CreateContest() {
             const token = localStorage.getItem('access_token');
             
             // Create contest
-            const contestResponse = await fetch(`${API_BASE}/api/contests/`, {
+            const contestResponse = await fetch('http://localhost:8000/api/contests/', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

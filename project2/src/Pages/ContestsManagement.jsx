@@ -6,7 +6,6 @@ import { ToastContainer } from '../Components/Toast';
 import { Plus, Edit, Trash2, Users, Clock, Calendar, Trophy, Eye } from 'lucide-react';
 import '../styles1/ContestsManagement.css';
 import { useToast } from '../hooks/useToast';
-import API_BASE from '../config';
 
 const ContestsManagement = () => {
     const navigate = useNavigate();
@@ -28,7 +27,7 @@ const ContestsManagement = () => {
     const fetchContests = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            let url = `${API_BASE}/api/contests/`;
+            let url = 'http://localhost:8000/api/contests/';
             
             if (filter !== 'all') {
                 url += `?status=${filter}`;
@@ -56,7 +55,7 @@ const ContestsManagement = () => {
 
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`${API_BASE}/api/contests/${contestId}/`, {
+            const response = await fetch(`http://localhost:8000/api/contests/${contestId}/`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

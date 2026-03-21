@@ -1,9 +1,8 @@
-import API_BASE from '../config';
-
 export const fetchLeetCodeStats = async (username) => {
     try {
+        // Call our backend proxy to avoid CORS issues with LeetCode's GraphQL API
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`${API_BASE}/api/leetcode-stats/?username=${encodeURIComponent(username)}`, {
+        const response = await fetch(`http://localhost:8000/api/leetcode-stats/?username=${encodeURIComponent(username)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -73,7 +72,7 @@ export const fetchCodeforcesStats = async (username) => {
 export const fetchCodeChefStats = async (username) => {
     try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`${API_BASE}/api/codechef-stats/?username=${encodeURIComponent(username)}`, {
+        const response = await fetch(`http://localhost:8000/api/codechef-stats/?username=${encodeURIComponent(username)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',

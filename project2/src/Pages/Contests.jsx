@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { Trophy, Calendar, Clock, Users, Plus, Filter } from 'lucide-react';
-import API_BASE from '../config';
 import '../styles1/Contests.css';
 
 function Contests() {
@@ -21,7 +20,7 @@ function Contests() {
     const fetchContests = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            let url = `${API_BASE}/api/contests/`;
+            let url = 'http://localhost:8000/api/contests/';
             
             if (statusFilter !== 'All') {
                 url += `?status=${statusFilter.toLowerCase()}`;

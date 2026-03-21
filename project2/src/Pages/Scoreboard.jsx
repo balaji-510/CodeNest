@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchLeetCodeStats, fetchCodeChefStats } from '../services/externalStats';
 import { exportToCSV } from '../services/mentorReports';
-import API_BASE from '../config';
 import '../styles1/Scoreboard.css';
 
 // ── Score formula ──────────────────────────────────────────────────────────────
@@ -40,7 +39,7 @@ const Scoreboard = () => {
   // Fetch base student list
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE}/api/scoreboard/`, {
+    fetch('http://localhost:8000/api/scoreboard/', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())

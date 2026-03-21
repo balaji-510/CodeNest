@@ -4,7 +4,6 @@ import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { getProblemById } from '../services/api';
 import { Plus, Trash2, Eye, EyeOff, Save } from 'lucide-react';
-import API_BASE from '../config';
 import '../styles1/ManageTestCases.css';
 
 function ManageTestCases() {
@@ -25,7 +24,7 @@ function ManageTestCases() {
             setProblem(problemData);
             
             // Fetch test cases
-            const response = await fetch(`${API_BASE}/api/problems/${id}/testcases/`, {
+            const response = await fetch(`http://localhost:8000/api/problems/${id}/testcases/`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                 }
@@ -69,7 +68,7 @@ function ManageTestCases() {
         if (testCase.id && !testCase.isNew) {
             // Delete from backend
             try {
-                await fetch(`${API_BASE}/api/testcases/${testCase.id}/`, {
+                await fetch(`http://localhost:8000/api/testcases/${testCase.id}/`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('access_token')}`
@@ -100,7 +99,7 @@ function ManageTestCases() {
 
                 if (testCase.id && !testCase.isNew) {
                     // Update existing
-                    await fetch(`${API_BASE}/api/testcases/${testCase.id}/`, {
+                    await fetch(`http://localhost:8000/api/testcases/${testCase.id}/`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -110,7 +109,7 @@ function ManageTestCases() {
                     });
                 } else {
                     // Create new
-                    await fetch(`${API_BASE}/api/testcases/`, {
+                    await fetch('http://localhost:8000/api/testcases/', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

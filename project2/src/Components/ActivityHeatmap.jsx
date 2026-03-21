@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Flame, Calendar, TrendingUp, Clock } from 'lucide-react';
-import API_BASE from '../config';
 import '../styles1/ActivityHeatmap.css';
 
 function ActivityHeatmap({ userId }) {
@@ -16,8 +15,8 @@ function ActivityHeatmap({ userId }) {
         try {
             const token = localStorage.getItem('access_token');
             const url = userId 
-                ? `${API_BASE}/api/activity-heatmap/?user=${userId}`
-                : `${API_BASE}/api/activity-heatmap/`;
+                ? `http://localhost:8000/api/activity-heatmap/?user=${userId}`
+                : 'http://localhost:8000/api/activity-heatmap/';
             
             const response = await fetch(url, {
                 headers: {
