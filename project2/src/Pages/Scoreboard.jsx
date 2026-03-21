@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { fetchLeetCodeStats, fetchCodeforcesStats, fetchCodeChefStats } from '../services/externalStats';
+import React, { useState, useEffect } from 'react';
+import { fetchLeetCodeStats, fetchCodeChefStats } from '../services/externalStats';
 import { exportToCSV } from '../services/mentorReports';
+import API_BASE from '../config';
 import '../styles1/Scoreboard.css';
 
 // ── Score formula ──────────────────────────────────────────────────────────────
 // LeetCode  : easy*5 + medium*10 + hard*20 + floor(rating/100)*5
 // CodeChef  : problems_solved*8 + floor(rating/100)*6
-// Codeforces: problems_solved*8 + floor(rating/100)*7
 // CoderNest : direct from backend (difficulty-based points)
-// Total     = sum of all four
+// Total     = sum of all three
 
 function calcLCScore(lc) {
   if (!lc) return 0;
@@ -24,39 +24,11 @@ function calcCCScore(cc) {
     + Math.floor((cc.currentRating || 0) / 100) * 6;
 }
 
-function calcCFScore(cf) {
-  if (!cf) return 0;
-  return (cf.problemsSolved || 0) * 8
-    + Math.floor((cf.rating || 0) / 100) * 7;
-}
-
-function calcHRScore(_hr) {
-  return 0;
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-const PlatformCell = ({ data, loading, handle, verified }) => {
-  if (!handle) return <td className="sb-cell sb-no-handle" colSpan={5}>—</td>;
-  if (loading) return <td className="sb-cell sb-loading" colSpan={5}>⏳</td>;
-  if (!data) return <td className="sb-cell sb-error" colSpan={5}>N/A</td>;
-  return (
-    <>
-      <td className="sb-cell">{data.totalSolved ?? data.problemsSolved ?? '—'}</td>
-      <td className="sb-cell sb-easy">{data.easySolved ?? '—'}</td>
-      <td className="sb-cell sb-medium">{data.mediumSolved ?? '—'}</td>
-      <td className="sb-cell sb-hard">{data.hardSolved ?? '—'}</td>
-      <td className="sb-cell sb-rating">{data.contestRating ?? data.rating ?? '—'}</td>
-    </>
-  );
-};
-
-const SORT_KEYS = ['rank', 'name', 'total', 'codenest', 'lc', 'cc', 'cf'];
-
 // ── Main Component ─────────────────────────────────────────────────────────────
-const Scoreboard = ({ fullPage = false }) => {
+const Scoreboard = () => {
   const [students, setStudents] = useState([]);
-  const [platformStats, setPlatformStats] = useState({});   // { userId: { lc, cc, cf } }
-  const [loadingPlatform, setLoadingPlatform] = useState({}); // { userId: { lc, cc, cf } }
+  const [platformStats, setPlatformStats] = useState({});
+  const [loadingPlatform, setLoadingPlatform] = useState({});
   const [baseLoading, setBaseLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('all');
@@ -68,7 +40,7 @@ const Scoreboard = ({ fullPage = false }) => {
   // Fetch base student list
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    fetch('http://localhost:8000/api/scoreboard/', {
+    fetch(`${API_BASE}/api/scoreboard/`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -79,14 +51,11 @@ const Scoreboard = ({ fullPage = false }) => {
       .catch(() => setBaseLoading(false));
   }, []);
 
-  // Fetch platform stats for each student lazily
+  // Fetch platform stats for each student
   useEffect(() => {
     if (!students.length) return;
-
     students.forEach(s => {
       const uid = s.id;
-
-      // LeetCode
       if (s.leetcode_handle && s.leetcode_verified) {
         setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], lc: true } }));
         fetchLeetCodeStats(s.leetcode_handle).then(data => {
@@ -94,8 +63,6 @@ const Scoreboard = ({ fullPage = false }) => {
           setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], lc: false } }));
         });
       }
-
-      // CodeChef
       if (s.codechef_handle && s.codechef_verified) {
         setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cc: true } }));
         fetchCodeChefStats(s.codechef_handle).then(data => {
@@ -103,30 +70,35 @@ const Scoreboard = ({ fullPage = false }) => {
           setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cc: false } }));
         });
       }
-
-      // Codeforces
-      if (s.codeforces_handle && s.codeforces_verified) {
-        setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cf: true } }));
-        fetchCodeforcesStats(s.codeforces_handle).then(data => {
-          setPlatformStats(prev => ({ ...prev, [uid]: { ...prev[uid], cf: data } }));
-          setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cf: false } }));
-        });
-      }
-
-      // HackerRank — removed (no public API available)
     });
   }, [students]);
 
-  // Enrich students with computed scores
+  // Enrich students with computed scores + flat sort fields
   const enriched = students.map(s => {
     const uid = s.id;
     const ps = platformStats[uid] || {};
     const lcScore = calcLCScore(ps.lc);
     const ccScore = calcCCScore(ps.cc);
-    const cfScore = calcCFScore(ps.cf);
-    const hrScore = calcHRScore(ps.hr);
-    const total = s.codenest.score + lcScore + ccScore + cfScore + hrScore;
-    return { ...s, lcScore, ccScore, cfScore, hrScore, total };
+    const total = s.codenest.score + lcScore + ccScore;
+    return {
+      ...s,
+      lcScore,
+      ccScore,
+      total,
+      // flat fields for sub-column sorting
+      cn_score:   s.codenest.score,
+      cn_solved:  s.codenest.solved,
+      cn_easy:    s.codenest.easy,
+      cn_medium:  s.codenest.medium,
+      cn_hard:    s.codenest.hard,
+      lc_solved:  ps.lc?.totalSolved  ?? -1,
+      lc_easy:    ps.lc?.easySolved   ?? -1,
+      lc_medium:  ps.lc?.mediumSolved ?? -1,
+      lc_hard:    ps.lc?.hardSolved   ?? -1,
+      lc_rating:  ps.lc?.contestRating ?? -1,
+      cc_solved:  ps.cc?.totalSolved  ?? -1,
+      cc_rating:  ps.cc?.currentRating ?? -1,
+    };
   });
 
   // Filter
@@ -141,13 +113,22 @@ const Scoreboard = ({ fullPage = false }) => {
   const sorted = [...filtered].sort((a, b) => {
     let av, bv;
     switch (sortKey) {
-      case 'name':    av = a.name; bv = b.name; break;
-      case 'codenest': av = a.codenest.score; bv = b.codenest.score; break;
-      case 'lc':      av = a.lcScore; bv = b.lcScore; break;
-      case 'cc':      av = a.ccScore; bv = b.ccScore; break;
-      case 'cf':      av = a.cfScore; bv = b.cfScore; break;
-      case 'hr':      av = a.hrScore; bv = b.hrScore; break;
-      default:        av = a.total; bv = b.total;
+      case 'name':      av = a.name; bv = b.name; break;
+      case 'codenest':  av = a.cn_score; bv = b.cn_score; break;
+      case 'cn_solved': av = a.cn_solved; bv = b.cn_solved; break;
+      case 'cn_easy':   av = a.cn_easy; bv = b.cn_easy; break;
+      case 'cn_medium': av = a.cn_medium; bv = b.cn_medium; break;
+      case 'cn_hard':   av = a.cn_hard; bv = b.cn_hard; break;
+      case 'lc':        av = a.lcScore; bv = b.lcScore; break;
+      case 'lc_solved': av = a.lc_solved; bv = b.lc_solved; break;
+      case 'lc_easy':   av = a.lc_easy; bv = b.lc_easy; break;
+      case 'lc_medium': av = a.lc_medium; bv = b.lc_medium; break;
+      case 'lc_hard':   av = a.lc_hard; bv = b.lc_hard; break;
+      case 'lc_rating': av = a.lc_rating; bv = b.lc_rating; break;
+      case 'cc':        av = a.ccScore; bv = b.ccScore; break;
+      case 'cc_solved': av = a.cc_solved; bv = b.cc_solved; break;
+      case 'cc_rating': av = a.cc_rating; bv = b.cc_rating; break;
+      default:          av = a.total; bv = b.total;
     }
     if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     return sortDir === 'asc' ? av - bv : bv - av;
@@ -185,24 +166,15 @@ const Scoreboard = ({ fullPage = false }) => {
       CoderNest_Hard: s.codenest.hard,
       LeetCode_Handle: s.leetcode_handle || '—',
       LeetCode_Score: s.lcScore,
-      LeetCode_Solved: platformStats[s.id]?.lc?.totalSolved ?? '—',
-      LeetCode_Easy: platformStats[s.id]?.lc?.easySolved ?? '—',
-      LeetCode_Medium: platformStats[s.id]?.lc?.mediumSolved ?? '—',
-      LeetCode_Hard: platformStats[s.id]?.lc?.hardSolved ?? '—',
-      LeetCode_Rating: platformStats[s.id]?.lc?.contestRating ?? '—',
+      LeetCode_Solved: s.lc_solved >= 0 ? s.lc_solved : '—',
+      LeetCode_Easy: s.lc_easy >= 0 ? s.lc_easy : '—',
+      LeetCode_Medium: s.lc_medium >= 0 ? s.lc_medium : '—',
+      LeetCode_Hard: s.lc_hard >= 0 ? s.lc_hard : '—',
+      LeetCode_Rating: s.lc_rating >= 0 ? s.lc_rating : '—',
       CodeChef_Handle: s.codechef_handle || '—',
       CodeChef_Score: s.ccScore,
-      CodeChef_Solved: platformStats[s.id]?.cc?.totalSolved ?? '—',
-      CodeChef_Rating: platformStats[s.id]?.cc?.currentRating ?? '—',
-      Codeforces_Handle: s.codeforces_handle || '—',
-      Codeforces_Score: s.cfScore,
-      Codeforces_Solved: platformStats[s.id]?.cf?.problemsSolved ?? '—',
-      Codeforces_Rating: platformStats[s.id]?.cf?.rating ?? '—',
-      HackerRank_Handle: s.hackerrank_handle || '—',
-      HackerRank_Score: s.hrScore,
-      HackerRank_TotalScore: platformStats[s.id]?.hr?.totalScore ?? '—',
-      HackerRank_Badges: platformStats[s.id]?.hr?.badges ?? '—',
-      HackerRank_Stars: platformStats[s.id]?.hr?.stars ?? '—',
+      CodeChef_Solved: s.cc_solved >= 0 ? s.cc_solved : '—',
+      CodeChef_Rating: s.cc_rating >= 0 ? s.cc_rating : '—',
     }));
     exportToCSV(rows, `Scoreboard_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
   };
@@ -239,8 +211,6 @@ const Scoreboard = ({ fullPage = false }) => {
         <span className="sb-tag cn">CoderNest = difficulty pts</span>
         <span className="sb-tag lc">LeetCode = E×5 + M×10 + H×20 + ⌊rating/100⌋×5</span>
         <span className="sb-tag cc">CodeChef = solved×8 + ⌊rating/100⌋×6</span>
-        <span className="sb-tag cf">Codeforces = solved×8 + ⌊rating/100⌋×7</span>
-        <span className="sb-tag" style={{ background: '#2ec86622', color: '#2ec866' }}>HackerRank = score + badges×5</span>
       </div>
 
       {/* Table */}
@@ -253,39 +223,24 @@ const Scoreboard = ({ fullPage = false }) => {
               <th rowSpan={2} className="sb-th" onClick={() => handleSort('total')}>Total Score<SortIcon k="total" /></th>
               <th colSpan={5} className="sb-th sb-platform-header cn-header">CoderNest</th>
               <th colSpan={5} className="sb-th sb-platform-header lc-header">LeetCode</th>
-              <th colSpan={5} className="sb-th sb-platform-header cc-header">CodeChef</th>
-              <th colSpan={5} className="sb-th sb-platform-header cf-header">Codeforces</th>
-              <th colSpan={3} className="sb-th sb-platform-header" style={{ background: '#2ec86622', color: '#2ec866' }}>HackerRank</th>
+              <th colSpan={2} className="sb-th sb-platform-header cc-header">CodeChef</th>
             </tr>
             <tr className="sb-header-sub">
               {/* CoderNest sub-cols */}
-              <th className="sb-th sb-sub">Score</th>
-              <th className="sb-th sb-sub">Solved</th>
-              <th className="sb-th sb-sub sb-easy">Easy</th>
-              <th className="sb-th sb-sub sb-medium">Med</th>
-              <th className="sb-th sb-sub sb-hard">Hard</th>
+              <th className="sb-th sb-sub sb-sortable" onClick={() => handleSort('codenest')}>Score<SortIcon k="codenest" /></th>
+              <th className="sb-th sb-sub sb-sortable" onClick={() => handleSort('cn_solved')}>Solved<SortIcon k="cn_solved" /></th>
+              <th className="sb-th sb-sub sb-easy sb-sortable" onClick={() => handleSort('cn_easy')}>Easy<SortIcon k="cn_easy" /></th>
+              <th className="sb-th sb-sub sb-medium sb-sortable" onClick={() => handleSort('cn_medium')}>Med<SortIcon k="cn_medium" /></th>
+              <th className="sb-th sb-sub sb-hard sb-sortable" onClick={() => handleSort('cn_hard')}>Hard<SortIcon k="cn_hard" /></th>
               {/* LeetCode sub-cols */}
-              <th className="sb-th sb-sub">Solved</th>
-              <th className="sb-th sb-sub sb-easy">Easy</th>
-              <th className="sb-th sb-sub sb-medium">Med</th>
-              <th className="sb-th sb-sub sb-hard">Hard</th>
-              <th className="sb-th sb-sub sb-rating">Rating</th>
+              <th className="sb-th sb-sub sb-sortable" onClick={() => handleSort('lc_solved')}>Solved<SortIcon k="lc_solved" /></th>
+              <th className="sb-th sb-sub sb-easy sb-sortable" onClick={() => handleSort('lc_easy')}>Easy<SortIcon k="lc_easy" /></th>
+              <th className="sb-th sb-sub sb-medium sb-sortable" onClick={() => handleSort('lc_medium')}>Med<SortIcon k="lc_medium" /></th>
+              <th className="sb-th sb-sub sb-hard sb-sortable" onClick={() => handleSort('lc_hard')}>Hard<SortIcon k="lc_hard" /></th>
+              <th className="sb-th sb-sub sb-rating sb-sortable" onClick={() => handleSort('lc_rating')}>Rating<SortIcon k="lc_rating" /></th>
               {/* CodeChef sub-cols */}
-              <th className="sb-th sb-sub">Solved</th>
-              <th className="sb-th sb-sub sb-easy">Easy</th>
-              <th className="sb-th sb-sub sb-medium">Med</th>
-              <th className="sb-th sb-sub sb-hard">Hard</th>
-              <th className="sb-th sb-sub sb-rating">Rating</th>
-              {/* Codeforces sub-cols */}
-              <th className="sb-th sb-sub">Solved</th>
-              <th className="sb-th sb-sub sb-easy">Easy</th>
-              <th className="sb-th sb-sub sb-medium">Med</th>
-              <th className="sb-th sb-sub sb-hard">Hard</th>
-              <th className="sb-th sb-sub sb-rating">Rating</th>
-              {/* HackerRank sub-cols */}
-              <th className="sb-th sb-sub">Score</th>
-              <th className="sb-th sb-sub">Badges</th>
-              <th className="sb-th sb-sub sb-rating">Stars</th>
+              <th className="sb-th sb-sub sb-sortable" onClick={() => handleSort('cc_solved')}>Solved<SortIcon k="cc_solved" /></th>
+              <th className="sb-th sb-sub sb-rating sb-sortable" onClick={() => handleSort('cc_rating')}>Rating<SortIcon k="cc_rating" /></th>
             </tr>
           </thead>
           <tbody>
@@ -296,8 +251,6 @@ const Scoreboard = ({ fullPage = false }) => {
               const lp = loadingPlatform[uid] || {};
               const lcData = ps.lc;
               const ccData = ps.cc;
-              const cfData = ps.cf;
-              const hrData = ps.hr;
 
               return (
                 <tr key={uid} className={`sb-row ${rank <= 3 ? `sb-top${rank}` : ''}`}>
@@ -344,61 +297,18 @@ const Scoreboard = ({ fullPage = false }) => {
                   {/* CodeChef */}
                   {s.codechef_handle && s.codechef_verified ? (
                     lp.cc ? (
-                      <td className="sb-cell sb-loading" colSpan={5}>⏳</td>
+                      <td className="sb-cell sb-loading" colSpan={2}>⏳</td>
                     ) : ccData ? (
                       <>
                         <td className="sb-cell">{ccData.totalSolved ?? '—'}</td>
-                        <td className="sb-cell sb-easy">—</td>
-                        <td className="sb-cell sb-medium">—</td>
-                        <td className="sb-cell sb-hard">—</td>
                         <td className="sb-cell sb-rating">{ccData.currentRating ?? '—'}</td>
                       </>
                     ) : (
-                      <td className="sb-cell sb-error" colSpan={5}>N/A</td>
+                      <td className="sb-cell sb-error" colSpan={2}>N/A</td>
                     )
                   ) : (
-                    <td className="sb-cell sb-no-handle" colSpan={5}>
+                    <td className="sb-cell sb-no-handle" colSpan={2}>
                       {s.codechef_handle ? '⚠ unverified' : '—'}
-                    </td>
-                  )}
-
-                  {/* Codeforces */}
-                  {s.codeforces_handle && s.codeforces_verified ? (
-                    lp.cf ? (
-                      <td className="sb-cell sb-loading" colSpan={5}>⏳</td>
-                    ) : cfData ? (
-                      <>
-                        <td className="sb-cell">{cfData.problemsSolved ?? '—'}</td>
-                        <td className="sb-cell sb-easy">—</td>
-                        <td className="sb-cell sb-medium">—</td>
-                        <td className="sb-cell sb-hard">—</td>
-                        <td className="sb-cell sb-rating">{cfData.rating ?? '—'}</td>
-                      </>
-                    ) : (
-                      <td className="sb-cell sb-error" colSpan={5}>N/A</td>
-                    )
-                  ) : (
-                    <td className="sb-cell sb-no-handle" colSpan={5}>
-                      {s.codeforces_handle ? '⚠ unverified' : '—'}
-                    </td>
-                  )}
-
-                  {/* HackerRank */}
-                  {s.hackerrank_handle && s.hackerrank_verified ? (
-                    lp.hr ? (
-                      <td className="sb-cell sb-loading" colSpan={3}>⏳</td>
-                    ) : hrData ? (
-                      <>
-                        <td className="sb-cell">{hrData.totalScore ?? '—'}</td>
-                        <td className="sb-cell">{hrData.badges ?? '—'}</td>
-                        <td className="sb-cell sb-rating">{hrData.stars ?? '—'}</td>
-                      </>
-                    ) : (
-                      <td className="sb-cell sb-error" colSpan={3}>N/A</td>
-                    )
-                  ) : (
-                    <td className="sb-cell sb-no-handle" colSpan={3}>
-                      {s.hackerrank_handle ? '⚠ unverified' : '—'}
                     </td>
                   )}
                 </tr>
@@ -406,7 +316,7 @@ const Scoreboard = ({ fullPage = false }) => {
             })}
             {paginated.length === 0 && (
               <tr>
-                <td colSpan={26} className="sb-empty">No students found.</td>
+                <td colSpan={15} className="sb-empty">No students found.</td>
               </tr>
             )}
           </tbody>

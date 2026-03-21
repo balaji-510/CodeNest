@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { Code, Calendar, Clock, CheckCircle, XCircle, Filter } from 'lucide-react';
+import API_BASE from '../config';
 import '../styles1/Submissions.css';
 
 function Submissions() {
@@ -28,7 +29,7 @@ function Submissions() {
     const fetchSubmissions = async () => {
         try {
             const userId = localStorage.getItem('user_id');
-            const response = await fetch(`http://localhost:8000/api/submissions/?user=${userId}`, {
+            const response = await fetch(`${API_BASE}/api/submissions/?user=${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                 }

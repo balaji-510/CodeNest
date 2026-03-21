@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../styles1/Login.css";
 import { useNavigate } from "react-router-dom";
 import { login, register } from "../services/api";
+import API_BASE from "../config";
 
 // Signup has 3 steps: 'form' → 'otp' → done (redirects to login)
 function AuthLogin() {
@@ -41,7 +42,7 @@ function AuthLogin() {
 
     setOtpLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/send-otp/", {
+      const res = await fetch(`${API_BASE}/api/send-otp/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email.trim().toLowerCase() }),
@@ -74,7 +75,7 @@ function AuthLogin() {
     setOtpLoading(true);
     try {
       // Verify OTP
-      const verifyRes = await fetch("http://localhost:8000/api/verify-otp/", {
+      const verifyRes = await fetch(`${API_BASE}/api/verify-otp/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

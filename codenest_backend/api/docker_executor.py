@@ -65,13 +65,15 @@ class DockerExecutor:
     NETWORK_DISABLED = True
     
     def __init__(self):
-        """Initialize Docker client."""
+        """Initialize Docker client — supports Unix socket (local) and TCP (Railway via DOCKER_HOST)."""
         try:
+            # docker.from_env() automatically uses DOCKER_HOST env var if set,
+            # otherwise falls back to the Unix socket at /var/run/docker.sock
             self.client = docker.from_env()
             self.client.ping()
             logger.info("Docker client initialized successfully")
         except docker.errors.DockerException as e:
-            logger.error(f"Failed to initialize Docker client: {e}")
+            logger.warning(f"Docker not available: {e}. Code execution will use Piston API fallback.")
             self.client = None
     
     def is_available(self) -> bool:

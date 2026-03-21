@@ -6,6 +6,7 @@ import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import ActivityHeatmap from '../Components/ActivityHeatmap';
 import { getUserStats, getUserStatsByUsername, updateProfile, getVerificationToken } from '../services/api';
+import API_BASE from '../config';
 
 
 
@@ -129,7 +130,7 @@ const ProfilePage = () => {
                     userId = localStorage.getItem('user_id');
                 }
                 
-                const response = await fetch(`http://localhost:8000/api/achievements/?user_id=${userId}`, {
+                const response = await fetch(`${API_BASE}/api/achievements/?user_id=${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

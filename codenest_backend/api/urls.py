@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProblemViewSet, SubmissionViewSet, user_dashboard_stats, 
@@ -92,4 +93,7 @@ urlpatterns = [
     # HackerRank
     path('hackerrank-stats/', hackerrank_stats_proxy, name='hackerrank-stats'),
     path('verify-hackerrank/', verify_hackerrank_account, name='verify-hackerrank'),
+
+    # Health check (used by Railway)
+    path('health/', lambda request: JsonResponse({'status': 'ok'}), name='health'),
 ]

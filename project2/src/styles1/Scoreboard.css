@@ -89,8 +89,14 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8rem;
-  min-width: 1800px;
+  min-width: 1100px;
 }
+
+.sb-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.sb-sortable:hover { color: var(--text-primary, #f1f5f9); }
 
 /* Header rows */
 .sb-header-main th,

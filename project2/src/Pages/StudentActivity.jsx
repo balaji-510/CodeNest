@@ -4,6 +4,7 @@ import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { fetchLeetCodeStats, fetchCodeforcesStats, fetchCodeChefStats } from '../services/externalStats';
 import { exportToCSV } from '../services/mentorReports';
+import API_BASE from '../config';
 import '../styles1/StudentActivity.css';
 
 const INACTIVE_HOURS = 24;
@@ -168,8 +169,8 @@ const StudentActivity = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:8000/api/student-activity/', { headers: authHeaders }).then(r => r.json()),
-      fetch('http://localhost:8000/api/checkpoints/', { headers: authHeaders }).then(r => r.json()),
+      fetch(`${API_BASE}/api/student-activity/`, { headers: authHeaders }).then(r => r.json()),
+      fetch(`${API_BASE}/api/checkpoints/`, { headers: authHeaders }).then(r => r.json()),
     ]).then(([actData, cpData]) => {
       setStudents(Array.isArray(actData) ? actData : []);
       setCheckpoints(Array.isArray(cpData) ? cpData : []);
@@ -234,7 +235,7 @@ const StudentActivity = () => {
   const highRiskCount = enriched.filter(s => s.risk === 'high').length;
 
   const handleSaveCheckpoint = async (form) => {
-    const res = await fetch('http://localhost:8000/api/checkpoints/', {
+    const res = await fetch(`${API_BASE}/api/checkpoints/`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -242,14 +243,14 @@ const StudentActivity = () => {
     if (res.ok) {
       const cp = await res.json();
       // Refetch checkpoints
-      fetch('http://localhost:8000/api/checkpoints/', { headers: authHeaders })
+      fetch(`${API_BASE}/api/checkpoints/`, { headers: authHeaders })
         .then(r => r.json()).then(d => setCheckpoints(Array.isArray(d) ? d : []));
     }
     setShowModal(false);
   };
 
   const handleDeleteCheckpoint = async (id) => {
-    await fetch(`http://localhost:8000/api/checkpoints/${id}/delete/`, {
+    await fetch(`${API_BASE}/api/checkpoints/${id}/delete/`, {
       method: 'DELETE', headers: authHeaders,
     });
     setCheckpoints(prev => prev.filter(c => c.id !== id));

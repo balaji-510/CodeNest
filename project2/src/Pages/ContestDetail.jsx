@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { Trophy, Calendar, Clock, Users, Play, CheckCircle, Code } from 'lucide-react';
+import API_BASE from '../config';
 import '../styles1/ContestDetail.css';
 
 function ContestDetail() {
@@ -35,7 +36,7 @@ function ContestDetail() {
             const token = localStorage.getItem('access_token');
             
             // Fetch contest details
-            const contestResponse = await fetch(`http://localhost:8000/api/contests/${id}/`, {
+            const contestResponse = await fetch(`${API_BASE}/api/contests/${id}/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -45,7 +46,7 @@ function ContestDetail() {
                 setTimeRemaining(contestData.time_remaining || 0);
                 
                 // Check if user has joined
-                const participantsResponse = await fetch(`http://localhost:8000/api/contests/${id}/leaderboard/`, {
+                const participantsResponse = await fetch(`${API_BASE}/api/contests/${id}/leaderboard/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -65,7 +66,7 @@ function ContestDetail() {
     const handleJoinContest = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/api/contests/${id}/join/`, {
+            const response = await fetch(`${API_BASE}/api/contests/${id}/join/`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

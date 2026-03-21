@@ -5,6 +5,7 @@ import Navbar from "../Components/Navbar";
 import AIAssistant from "../Components/AIAssistant";
 import AchievementToast from "../Components/AchievementToast";
 import { getProblemById, executeCode, submitCode } from "../services/api";
+import API_BASE from "../config";
 import "../styles1/Editor.css";
 
 function ProblemSubmissionRow({ sub, onLoadCode }) {
@@ -104,7 +105,7 @@ function EditorPage() {
                 }
                 
                 // Fetch test cases (visible ones for testing)
-                const testCasesResponse = await fetch(`http://localhost:8000/api/problems/${id}/testcases/`, {
+                const testCasesResponse = await fetch(`${API_BASE}/api/problems/${id}/testcases/`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                     }
@@ -271,7 +272,7 @@ function EditorPage() {
         setSubmissionsLoading(true);
         try {
             const res = await fetch(
-                `http://localhost:8000/api/submissions/?user=${userId}&problem=${id}`,
+                `${API_BASE}/api/submissions/?user=${userId}&problem=${id}`,
                 { headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` } }
             );
             if (res.ok) {

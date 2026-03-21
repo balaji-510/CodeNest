@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Bot, X, Send, Lightbulb, Code2, Zap, BookOpen, HelpCircle } from "lucide-react";
+import API_BASE from "../config";
 import "../styles1/AIAssistant.css";
 
 function AIAssistant({ code, language, problemTitle, problemDescription }) {
@@ -71,7 +72,7 @@ function AIAssistant({ code, language, problemTitle, problemDescription }) {
                 conversationHistory: newMessages.slice(-5) // Last 5 messages for context
             };
 
-            const response = await fetch('http://localhost:8000/api/ai-assistant/', {
+            const response = await fetch(`${API_BASE}/api/ai-assistant/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from "@monaco-editor/react";
 import { Clock, CheckCircle, XCircle, Code, Play, Send, List, Trophy } from 'lucide-react';
+import API_BASE from '../config';
 import '../styles1/ContestArena.css';
 
 function ContestArena() {
@@ -74,7 +75,7 @@ function ContestArena() {
             const token = localStorage.getItem('access_token');
             
             // Fetch contest details
-            const contestResponse = await fetch(`http://localhost:8000/api/contests/${id}/`, {
+            const contestResponse = await fetch(`${API_BASE}/api/contests/${id}/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -90,7 +91,7 @@ function ContestArena() {
             }
 
             // Fetch leaderboard
-            const leaderboardResponse = await fetch(`http://localhost:8000/api/contests/${id}/leaderboard/`, {
+            const leaderboardResponse = await fetch(`${API_BASE}/api/contests/${id}/leaderboard/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -109,7 +110,7 @@ function ContestArena() {
         
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch('http://localhost:8000/api/execute-code/', {
+            const response = await fetch(`${API_BASE}/api/execute-code/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -141,7 +142,7 @@ function ContestArena() {
         
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/api/contests/${id}/submit/`, {
+            const response = await fetch(`${API_BASE}/api/contests/${id}/submit/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
