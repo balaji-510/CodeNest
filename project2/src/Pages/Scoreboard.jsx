@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { fetchLeetCodeStats, fetchCodeChefStats } from '../services/externalStats';
+import { fetchLeetCodeStats, fetchCodeChefStats, fetchCodeforcesStats } from '../services/externalStats';
 import { exportToCSV } from '../services/mentorReports';
 import '../styles1/Scoreboard.css';
 
 // ── Score formula ──────────────────────────────────────────────────────────────
 // LeetCode  : easy*5 + medium*10 + hard*20 + floor(rating/100)*5
 // CodeChef  : problems_solved*8 + floor(rating/100)*6
+// Codeforces: problems_solved*8 + floor(rating/100)*7
 // CoderNest : direct from backend (difficulty-based points)
-// Total     = sum of all three
+// Total     = sum of all four
 
 function calcLCScore(lc) {
   if (!lc) return 0;
@@ -21,6 +22,12 @@ function calcCCScore(cc) {
   if (!cc) return 0;
   return (cc.totalSolved || 0) * 8
     + Math.floor((cc.currentRating || 0) / 100) * 6;
+}
+
+function calcCFScore(cf) {
+  if (!cf) return 0;
+  return (cf.problemsSolved || 0) * 8
+    + Math.floor((cf.rating || 0) / 100) * 7;
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
@@ -69,20 +76,28 @@ const Scoreboard = () => {
           setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cc: false } }));
         });
       }
+      if (s.codeforces_handle && s.codeforces_verified) {
+        setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cf: true } }));
+        fetchCodeforcesStats(s.codeforces_handle).then(data => {
+          setPlatformStats(prev => ({ ...prev, [uid]: { ...prev[uid], cf: data } }));
+          setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], cf: false } }));
+        });
+      }
     });
   }, [students]);
-
   // Enrich students with computed scores + flat sort fields
   const enriched = students.map(s => {
     const uid = s.id;
     const ps = platformStats[uid] || {};
     const lcScore = calcLCScore(ps.lc);
     const ccScore = calcCCScore(ps.cc);
-    const total = s.codenest.score + lcScore + ccScore;
+    const cfScore = calcCFScore(ps.cf);
+    const total = s.codenest.score + lcScore + ccScore + cfScore;
     return {
       ...s,
       lcScore,
       ccScore,
+      cfScore,
       total,
       // flat fields for sub-column sorting
       cn_score:   s.codenest.score,
@@ -97,6 +112,8 @@ const Scoreboard = () => {
       lc_rating:  ps.lc?.contestRating ?? -1,
       cc_solved:  ps.cc?.totalSolved  ?? -1,
       cc_rating:  ps.cc?.currentRating ?? -1,
+      cf_solved:  ps.cf?.problemsSolved ?? -1,
+      cf_rating:  ps.cf?.rating ?? -1,
     };
   });
 
@@ -127,6 +144,9 @@ const Scoreboard = () => {
       case 'cc':        av = a.ccScore; bv = b.ccScore; break;
       case 'cc_solved': av = a.cc_solved; bv = b.cc_solved; break;
       case 'cc_rating': av = a.cc_rating; bv = b.cc_rating; break;
+      case 'cf':        av = a.cfScore; bv = b.cfScore; break;
+      case 'cf_solved': av = a.cf_solved; bv = b.cf_solved; break;
+      case 'cf_rating': av = a.cf_rating; bv = b.cf_rating; break;
       default:          av = a.total; bv = b.total;
     }
     if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
@@ -174,6 +194,10 @@ const Scoreboard = () => {
       CodeChef_Score: s.ccScore,
       CodeChef_Solved: s.cc_solved >= 0 ? s.cc_solved : '—',
       CodeChef_Rating: s.cc_rating >= 0 ? s.cc_rating : '—',
+      Codeforces_Handle: s.codeforces_handle || '—',
+      Codeforces_Score: s.cfScore,
+      Codeforces_Solved: s.cf_solved >= 0 ? s.cf_solved : '—',
+      Codeforces_Rating: s.cf_rating >= 0 ? s.cf_rating : '—',
     }));
     exportToCSV(rows, `Scoreboard_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
   };
@@ -210,6 +234,7 @@ const Scoreboard = () => {
         <span className="sb-tag cn">CoderNest = difficulty pts</span>
         <span className="sb-tag lc">LeetCode = E×5 + M×10 + H×20 + ⌊rating/100⌋×5</span>
         <span className="sb-tag cc">CodeChef = solved×8 + ⌊rating/100⌋×6</span>
+        <span className="sb-tag cf">Codeforces = solved×8 + ⌊rating/100⌋×7</span>
       </div>
 
       {/* Table */}
@@ -223,6 +248,7 @@ const Scoreboard = () => {
               <th colSpan={5} className="sb-th sb-platform-header cn-header">CoderNest</th>
               <th colSpan={5} className="sb-th sb-platform-header lc-header">LeetCode</th>
               <th colSpan={2} className="sb-th sb-platform-header cc-header">CodeChef</th>
+              <th colSpan={2} className="sb-th sb-platform-header cf-header">Codeforces</th>
             </tr>
             <tr className="sb-header-sub">
               {/* CoderNest sub-cols */}
@@ -240,6 +266,9 @@ const Scoreboard = () => {
               {/* CodeChef sub-cols */}
               <th className="sb-th sb-sub sb-sortable" onClick={() => handleSort('cc_solved')}>Solved<SortIcon k="cc_solved" /></th>
               <th className="sb-th sb-sub sb-rating sb-sortable" onClick={() => handleSort('cc_rating')}>Rating<SortIcon k="cc_rating" /></th>
+              {/* Codeforces sub-cols */}
+              <th className="sb-th sb-sub sb-sortable" onClick={() => handleSort('cf_solved')}>Solved<SortIcon k="cf_solved" /></th>
+              <th className="sb-th sb-sub sb-rating sb-sortable" onClick={() => handleSort('cf_rating')}>Rating<SortIcon k="cf_rating" /></th>
             </tr>
           </thead>
           <tbody>
@@ -250,6 +279,7 @@ const Scoreboard = () => {
               const lp = loadingPlatform[uid] || {};
               const lcData = ps.lc;
               const ccData = ps.cc;
+              const cfData = ps.cf;
 
               return (
                 <tr key={uid} className={`sb-row ${rank <= 3 ? `sb-top${rank}` : ''}`}>
@@ -310,12 +340,30 @@ const Scoreboard = () => {
                       {s.codechef_handle ? '⚠ unverified' : '—'}
                     </td>
                   )}
+
+                  {/* Codeforces */}
+                  {s.codeforces_handle && s.codeforces_verified ? (
+                    lp.cf ? (
+                      <td className="sb-cell sb-loading" colSpan={2}>⏳</td>
+                    ) : cfData ? (
+                      <>
+                        <td className="sb-cell">{cfData.problemsSolved ?? '—'}</td>
+                        <td className="sb-cell sb-rating">{cfData.rating ?? '—'}</td>
+                      </>
+                    ) : (
+                      <td className="sb-cell sb-error" colSpan={2}>N/A</td>
+                    )
+                  ) : (
+                    <td className="sb-cell sb-no-handle" colSpan={2}>
+                      {s.codeforces_handle ? '⚠ unverified' : '—'}
+                    </td>
+                  )}
                 </tr>
               );
             })}
             {paginated.length === 0 && (
               <tr>
-                <td colSpan={15} className="sb-empty">No students found.</td>
+                <td colSpan={17} className="sb-empty">No students found.</td>
               </tr>
             )}
           </tbody>
