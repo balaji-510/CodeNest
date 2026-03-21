@@ -1,54 +1,40 @@
 /* Global Form Element Fixes - Text Visibility */
 
-/* Fix all select elements */
+/* ── Dark theme: select / option ───────────────────────────────────────── */
 select,
-select option,
-.form-group select,
-.form-group select option,
-.filter-select,
-.filter-select option,
-.editor-controls select,
-.editor-controls select option,
-.problem-buttons select,
-.problem-buttons select option {
+select option {
     color: #ffffff !important;
     background-color: rgba(15, 23, 42, 0.8) !important;
 }
 
-/* Fix select hover states */
-select:hover,
-.form-group select:hover,
-.filter-select:hover,
-.editor-controls select:hover,
-.problem-buttons select:hover {
-    background-color: rgba(15, 23, 42, 0.9) !important;
-}
-
-/* Fix select focus states */
-select:focus,
-.form-group select:focus,
-.filter-select:focus,
-.editor-controls select:focus,
-.problem-buttons select:focus {
+select:focus {
     color: #ffffff !important;
     background-color: rgba(15, 23, 42, 0.95) !important;
 }
 
-/* Fix option elements specifically */
 option {
     color: #ffffff !important;
     background-color: #1e293b !important;
-    padding: 8px !important;
 }
 
-option:hover,
-option:checked,
-option:focus {
-    background-color: #38bdf8 !important;
+/* ── Dark theme: inputs ─────────────────────────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="url"],
+textarea {
     color: #ffffff !important;
 }
 
-/* Fix datetime-local inputs */
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8 !important;
+    opacity: 0.7;
+}
+
+/* ── Dark theme: datetime inputs ────────────────────────────────────────── */
 input[type="datetime-local"],
 input[type="date"],
 input[type="time"] {
@@ -64,23 +50,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
-/* Fix all input text colors */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-input[type="search"],
-textarea {
-    color: #ffffff !important;
-}
-
-input::placeholder,
-textarea::placeholder {
-    color: #94a3b8 !important;
-    opacity: 0.7;
-}
-
-/* Fix dropdown arrows */
+/* ── Select dropdown arrow ──────────────────────────────────────────────── */
 select {
     appearance: none;
     -webkit-appearance: none;
@@ -92,90 +62,16 @@ select {
     padding-right: 2.5rem !important;
 }
 
-/* Fix for branch filter and other specific selects */
-.branch-filter select,
-.status-filter select,
-.difficulty-filter select,
-.topic-filter select {
-    color: #ffffff !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
-}
-
-.branch-filter select option,
-.status-filter select option,
-.difficulty-filter select option,
-.topic-filter select option {
-    color: #ffffff !important;
-    background-color: #1e293b !important;
-}
-
-/* Fix for MentorDashboard specific selects */
-.mentor-dashboard select,
-.mentor-dashboard select option {
-    color: #ffffff !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
-}
-
-/* Fix for Problems page selects */
-.problems-page select,
-.problems-page select option {
-    color: #ffffff !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
-}
-
-/* Fix for Editor page selects */
-.editor-page select,
-.editor-page select option,
-.contest-arena select,
-.contest-arena select option {
-    color: #ffffff !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
-}
-
-/* Fix for CreateContest page */
-.create-contest-page select,
-.create-contest-page select option,
-.create-contest-page input[type="datetime-local"] {
-    color: #ffffff !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
-}
-
-/* Fix for ContestsManagement page */
-.contests-management-page select,
-.contests-management-page select option {
-    color: #ffffff !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
-}
-
-/* Ensure all form labels are visible */
-label {
-    color: #e2e8f0 !important;
-}
-
-/* Fix for any remaining gradient backgrounds that might hide text */
-.form-group input[style*="background"],
-.form-group select[style*="background"],
-.form-group textarea[style*="background"] {
-    color: #ffffff !important;
-}
-
-/* Override any inline styles that might be causing issues */
-*[style*="color: transparent"],
-*[style*="color:transparent"] {
-    color: #ffffff !important;
-}
-
-/* Fix for autocomplete dropdowns */
+/* ── Autofill ───────────────────────────────────────────────────────────── */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
     -webkit-text-fill-color: #ffffff !important;
     -webkit-box-shadow: 0 0 0 30px rgba(15, 23, 42, 0.8) inset !important;
-    box-shadow: 0 0 0 30px rgba(15, 23, 42, 0.8) inset !important;
 }
 
-/* Fix for disabled inputs */
+/* ── Disabled / readonly ────────────────────────────────────────────────── */
 input:disabled,
 select:disabled,
 textarea:disabled {
@@ -183,13 +79,12 @@ textarea:disabled {
     opacity: 0.6;
 }
 
-/* Fix for readonly inputs */
 input:read-only,
 textarea:read-only {
     color: #cbd5e1 !important;
 }
 
-/* ── Light theme: global input/textarea visibility ─────────────────────── */
+/* ── Light theme overrides ──────────────────────────────────────────────── */
 .light-theme input[type="text"],
 .light-theme input[type="email"],
 .light-theme input[type="password"],
@@ -220,78 +115,35 @@ textarea:read-only {
     background-color: #f1f5f9 !important;
 }
 
-/* ── Light theme: card/glass text visibility ────────────────────────────── */
-.light-theme .glass-effect {
-    color: #0f172a;
+.light-theme input[type="datetime-local"],
+.light-theme input[type="date"],
+.light-theme input[type="time"] {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+    color-scheme: light;
 }
 
-.light-theme h1,
-.light-theme h2,
-.light-theme h3,
-.light-theme h4,
-.light-theme h5,
-.light-theme h6 {
-    color: #0f172a;
+.light-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.light-theme input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
 }
 
-.light-theme p,
-.light-theme span,
-.light-theme label {
-    color: #334155;
+.light-theme select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
-/* Keep primary-colored elements their color */
-.light-theme .primary-text,
-.light-theme [class*="primary"],
-.light-theme .user-handle,
-.light-theme .account-link {
-    color: #0284c7 !important;
-}
-
-/* ── Light theme: code/pre blocks ───────────────────────────────────────── */
-.light-theme code {
-    background: rgba(2, 132, 199, 0.08);
-    color: #0f172a;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-/* ── Light theme: stat cards ────────────────────────────────────────────── */
-.light-theme .stat-value {
-    color: #0f172a;
-}
-
-.light-theme .card-trend {
-    color: #475569;
-}
-
-/* ── Light theme: skeleton shimmer ─────────────────────────────────────── */
-.light-theme .skeleton {
-    background: linear-gradient(90deg,
-        rgba(2, 132, 199, 0.05) 25%,
-        rgba(2, 132, 199, 0.12) 50%,
-        rgba(2, 132, 199, 0.05) 75%);
-    background-size: 200% 100%;
-}
-
-/* ── Light theme: modal/overlay backgrounds ─────────────────────────────── */
-.light-theme .modal-overlay,
-.light-theme .modal-content {
-    background: rgba(255, 255, 255, 0.97);
-    color: #0f172a;
+.light-theme input:-webkit-autofill,
+.light-theme input:-webkit-autofill:hover,
+.light-theme input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #0f172a !important;
+    -webkit-box-shadow: 0 0 0 30px #f1f5f9 inset !important;
 }
 
 /* ── Light theme: table text ────────────────────────────────────────────── */
-.light-theme table,
-.light-theme th,
+.light-theme th {
+    color: #475569;
+}
+
 .light-theme td {
     color: #0f172a;
-}
-
-.light-theme th {
-    background: rgba(2, 132, 199, 0.08);
-}
-
-.light-theme tr:hover td {
-    background: rgba(2, 132, 199, 0.04);
 }
