@@ -97,25 +97,6 @@ export const fetchCodeChefStats = async (username) => {
     }
 };
 
-export const syncAllStats = async (handles) => {
-    const results = {};
-
-    if (handles.leetcode) {
-        results.leetcode = await fetchLeetCodeStats(handles.leetcode);
-    }
-    if (handles.codeforces) {
-        results.codeforces = await fetchCodeforcesStats(handles.codeforces);
-    }
-    if (handles.codechef) {
-        results.codechef = await fetchCodeChefStats(handles.codechef);
-    }
-    if (handles.hackerrank) {
-        results.hackerrank = await fetchHackerRankStats(handles.hackerrank);
-    }
-
-    return results;
-};
-
 export const fetchHackerRankStats = async (username) => {
     try {
         const token = localStorage.getItem('access_token');
@@ -142,4 +123,23 @@ export const fetchHackerRankStats = async (username) => {
         console.error("Error fetching HackerRank stats:", error);
         return null;
     }
+};
+
+export const syncAllStats = async (handles) => {
+    const results = {};
+
+    if (handles.leetcode) {
+        results.leetcode = await fetchLeetCodeStats(handles.leetcode);
+    }
+    if (handles.codeforces) {
+        results.codeforces = await fetchCodeforcesStats(handles.codeforces);
+    }
+    if (handles.codechef) {
+        results.codechef = await fetchCodeChefStats(handles.codechef);
+    }
+    if (handles.hackerrank) {
+        results.hackerrank = await fetchHackerRankStats(handles.hackerrank);
+    }
+
+    return results;
 };

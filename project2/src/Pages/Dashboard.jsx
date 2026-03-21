@@ -103,18 +103,23 @@ function Dashboard() {
     }
 
     setIsSyncing(true);
-    // Use handles from stats (which come from DB/Profile)
-    const handles = {
-      leetcode: stats.leetcode_handle,
-      codechef: stats.codechef_handle,
-      codeforces: stats.codeforces_handle,
-      hackerrank: stats.hackerrank_handle,
-    };
+    try {
+      const handles = {
+        leetcode: stats.leetcode_handle,
+        codechef: stats.codechef_handle,
+        codeforces: stats.codeforces_handle,
+        hackerrank: stats.hackerrank_handle,
+      };
 
-    const newStats = await syncAllStats(handles);
-    setExternalStats(newStats);
-    localStorage.setItem('externalStatsCache', JSON.stringify(newStats));
-    setIsSyncing(false);
+      const newStats = await syncAllStats(handles);
+      setExternalStats(newStats);
+      localStorage.setItem('externalStatsCache', JSON.stringify(newStats));
+    } catch (err) {
+      console.error("Sync failed:", err);
+      alert("Failed to sync stats. Please try again.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
 
