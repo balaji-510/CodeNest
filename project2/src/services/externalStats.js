@@ -97,34 +97,6 @@ export const fetchCodeChefStats = async (username) => {
     }
 };
 
-export const fetchHackerRankStats = async (username) => {
-    try {
-        const token = localStorage.getItem('access_token');
-        const response = await fetch(`http://localhost:8000/api/hackerrank-stats/?username=${encodeURIComponent(username)}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            }
-        });
-
-        if (!response.ok) {
-            console.error("HackerRank proxy error:", response.status);
-            return null;
-        }
-
-        const data = await response.json();
-        if (data.error) {
-            console.error("HackerRank API Error:", data.error);
-            return null;
-        }
-
-        return data;
-    } catch (error) {
-        console.error("Error fetching HackerRank stats:", error);
-        return null;
-    }
-};
-
 export const syncAllStats = async (handles) => {
     const results = {};
 
@@ -136,9 +108,6 @@ export const syncAllStats = async (handles) => {
     }
     if (handles.codechef) {
         results.codechef = await fetchCodeChefStats(handles.codechef);
-    }
-    if (handles.hackerrank) {
-        results.hackerrank = await fetchHackerRankStats(handles.hackerrank);
     }
 
     return results;

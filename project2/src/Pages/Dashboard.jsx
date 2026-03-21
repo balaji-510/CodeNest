@@ -95,7 +95,6 @@ function Dashboard() {
     if (stats.leetcode_handle && !stats.is_leetcode_verified) unverified.push("LeetCode");
     if (stats.codechef_handle && !stats.is_codechef_verified) unverified.push("CodeChef");
     if (stats.codeforces_handle && !stats.is_codeforces_verified) unverified.push("CodeForces");
-    if (stats.hackerrank_handle && !stats.is_hackerrank_verified) unverified.push("HackerRank");
 
     if (unverified.length > 0) {
       alert(`Please verify your account(s) for ${unverified.join(", ")} in Profile Settings before syncing.`);
@@ -108,7 +107,6 @@ function Dashboard() {
         leetcode: stats.leetcode_handle,
         codechef: stats.codechef_handle,
         codeforces: stats.codeforces_handle,
-        hackerrank: stats.hackerrank_handle,
       };
 
       const newStats = await syncAllStats(handles);
@@ -369,37 +367,6 @@ function Dashboard() {
                     </div>
                   </div>
 
-                  {/* HackerRank Card */}
-                  <div className="glass-effect external-card hackerrank">
-                    <div className="platform-header">
-                      <div className="platform-logo-wrap hackerrank-logo">
-                        <img src="https://cdn.simpleicons.org/hackerrank/2EC866" alt="HackerRank" width="32" height="32" />
-                      </div>
-                      <span>HackerRank</span>
-                    </div>
-                    <div className="platform-body">
-                      <div className="p-stat">
-                        <span className="p-label">Total Score</span>
-                        <span className="p-value">{externalStats?.hackerrank?.totalScore ?? '--'}</span>
-                      </div>
-                      <div className="p-stat">
-                        <span className="p-label">Stars</span>
-                        <span className="p-value">{externalStats?.hackerrank?.stars ?? '--'}</span>
-                      </div>
-                      <div className="p-stat">
-                        <span className="p-label">Badges</span>
-                        <span className="p-value">{externalStats?.hackerrank?.badges ?? '--'}</span>
-                      </div>
-                      <div className="p-stat">
-                        <span className="p-label">Tracks</span>
-                        <span className="p-value">{externalStats?.hackerrank?.tracks ?? '--'}</span>
-                      </div>
-                      <div className="p-stat">
-                        <span className="p-label">Certificates</span>
-                        <span className="p-value">{externalStats?.hackerrank?.certificates ?? '--'}</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </section>
