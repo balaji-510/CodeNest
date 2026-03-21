@@ -41,7 +41,8 @@
   flex-wrap: wrap;
 }
 
-#button {
+#button,
+.problem-buttons button {
   padding: 0.6rem 1.5rem;
   background: var(--surface-color);
   color: var(--text-secondary);
@@ -51,12 +52,14 @@
   transition: var(--transition-smooth);
 }
 
-#button:hover {
+#button:hover,
+.problem-buttons button:hover {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
 }
 
-#button.active {
+#button.active,
+.problem-buttons button.active {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
@@ -200,4 +203,44 @@ tbody tr:hover td {
   .problem-status {
     display: none;
   }
+}
+
+/* ── Light theme fixes ──────────────────────────────────────────────────── */
+.light-theme .problem-buttons button {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: rgba(2, 132, 199, 0.2);
+}
+
+.light-theme .problem-buttons button:hover {
+  background: rgba(2, 132, 199, 0.08);
+  color: #0f172a;
+}
+
+.light-theme .problem-buttons button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.light-theme .problem-header input {
+  color: #0f172a;
+  background: #f1f5f9;
+  border-color: rgba(2, 132, 199, 0.2);
+}
+
+.light-theme td {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: rgba(2, 132, 199, 0.1);
+}
+
+.light-theme tbody tr:hover td {
+  background: rgba(2, 132, 199, 0.04);
+  border-color: var(--primary-color);
+}
+
+.light-theme .external-link-icon {
+  background: rgba(2, 132, 199, 0.06);
+  color: #475569;
 }
