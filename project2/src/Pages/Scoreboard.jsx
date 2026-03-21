@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchLeetCodeStats, fetchCodeforcesStats, fetchCodeChefStats, fetchHackerRankStats } from '../services/externalStats';
+import { fetchLeetCodeStats, fetchCodeforcesStats, fetchCodeChefStats } from '../services/externalStats';
 import { exportToCSV } from '../services/mentorReports';
 import '../styles1/Scoreboard.css';
 
@@ -30,9 +30,8 @@ function calcCFScore(cf) {
     + Math.floor((cf.rating || 0) / 100) * 7;
 }
 
-function calcHRScore(hr) {
-  if (!hr) return 0;
-  return (hr.totalScore || 0) + (hr.badges || 0) * 5;
+function calcHRScore(_hr) {
+  return 0;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -114,14 +113,7 @@ const Scoreboard = ({ fullPage = false }) => {
         });
       }
 
-      // HackerRank
-      if (s.hackerrank_handle && s.hackerrank_verified) {
-        setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], hr: true } }));
-        fetchHackerRankStats(s.hackerrank_handle).then(data => {
-          setPlatformStats(prev => ({ ...prev, [uid]: { ...prev[uid], hr: data } }));
-          setLoadingPlatform(prev => ({ ...prev, [uid]: { ...prev[uid], hr: false } }));
-        });
-      }
+      // HackerRank — removed (no public API available)
     });
   }, [students]);
 
