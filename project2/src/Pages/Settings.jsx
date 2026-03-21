@@ -382,7 +382,7 @@ const Settings = () => {
                                         <li><strong style={{ color: '#ffa116' }}>LeetCode</strong> — Go to <a href="https://leetcode.com/profile/" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>leetcode.com/profile</a> → Edit Profile → paste token in <em>Summary/Bio</em> → Save → click Verify here.</li>
                                         <li><strong style={{ color: '#818cf8' }}>CodeChef</strong> — Go to <a href="https://www.codechef.com/settings/profile" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>codechef.com/settings/profile</a> → paste token in <em>About</em> → Save → click Verify here.</li>
                                         <li><strong style={{ color: '#1f8acb' }}>Codeforces</strong> — Go to <a href="https://codeforces.com/settings/social" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>codeforces.com/settings/social</a> → paste token in <em>First name</em> → Save → click Verify here.</li>
-                                        <li><strong style={{ color: '#2ec866' }}>HackerRank</strong> — Go to <a href="https://www.hackerrank.com/settings/profile" target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>hackerrank.com/settings/profile</a> → paste token in <em>About Me</em> → Save → click Verify here.</li>
+                                        <li><strong style={{ color: '#2ec866' }}>HackerRank</strong> — Enter your username and click <em>Link</em>. We confirm the account exists (no token needed — HackerRank removed the About Me field).</li>
                                         <li>After verification succeeds, you can remove the token from your profile.</li>
                                     </ol>
                                 </div>
@@ -470,11 +470,11 @@ const Settings = () => {
                                     <div className="form-group">
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>HackerRank Username</label>
-                                            {verifiedStatus.hackerrank && <span style={{ color: '#4caf50', fontSize: '0.8rem' }}>✅ Verified</span>}
+                                            {verifiedStatus.hackerrank && <span style={{ color: '#4caf50', fontSize: '0.8rem' }}>✅ Linked</span>}
                                         </div>
-                                        {verificationToken && !verifiedStatus.hackerrank && (
+                                        {!verifiedStatus.hackerrank && (
                                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                                                Add <code style={{ background: 'rgba(0,0,0,0.3)', padding: '0 4px', borderRadius: '4px' }}>{verificationToken}</code> to your HackerRank <strong>About</strong> section, then click Verify.
+                                                Enter your HackerRank username and click Link — we'll confirm the account exists.
                                             </p>
                                         )}
                                         <div style={{ display: 'flex', gap: '1rem' }}>
@@ -491,7 +491,7 @@ const Settings = () => {
                                                     onClick={() => handleVerify('hackerrank')}
                                                     disabled={verifying.hackerrank}
                                                     style={{ padding: '0 1.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: 'white', fontWeight: '500' }}>
-                                                    {verifying.hackerrank ? 'Checking...' : 'Verify'}
+                                                    {verifying.hackerrank ? 'Checking...' : 'Link'}
                                                 </button>
                                             )}
                                         </div>

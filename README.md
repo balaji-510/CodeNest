@@ -304,7 +304,7 @@ To sync stats from LeetCode, CodeChef, Codeforces, or HackerRank:
    - **LeetCode** → leetcode.com/profile → Edit Profile → paste in *Summary/Bio* → Save
    - **CodeChef** → codechef.com/settings/profile → paste in *About* → Save
    - **Codeforces** → codeforces.com/settings/social → paste in *First name* → Save
-   - **HackerRank** → hackerrank.com/settings/profile → paste in *About Me* → Save
+   - **HackerRank** → enter your username and click Link (no token needed — HackerRank removed the About Me field)
 4. Enter your username in the input field and click **Verify**
 5. After verification, go to Dashboard and click **Sync Global Stats**
 6. You can remove the token from your external profiles after verification

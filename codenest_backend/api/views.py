@@ -2646,8 +2646,9 @@ def hackerrank_stats_proxy(request):
 @permission_classes([IsAuthenticated])
 def verify_hackerrank_account(request):
     """
-    Verify HackerRank account by checking the user's 'About' section for the verification token.
-    HackerRank profile About: https://www.hackerrank.com/rest/hackers/<handle>/profile
+    Save HackerRank handle directly after confirming the user exists.
+    HackerRank no longer exposes any editable public field (bio/about removed),
+    so we verify existence via their public profile page and save without token check.
     """
     import requests as req
 
@@ -2656,38 +2657,42 @@ def verify_hackerrank_account(request):
         return Response({'error': 'Handle is required'}, status=400)
 
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    token = profile.verification_token
-    if not token:
-        return Response({'error': 'No verification token found'}, status=400)
+
+    headers = {
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/120.0.0.0 Safari/537.36'
+        ),
+    }
 
     try:
         response = req.get(
-            f'https://www.hackerrank.com/rest/hackers/{handle}/profile',
-            headers={'User-Agent': 'Mozilla/5.0'},
-            timeout=10
+            f'https://www.hackerrank.com/{handle}',
+            headers=headers,
+            timeout=10,
+            allow_redirects=True,
         )
-        if response.status_code == 404:
-            return Response({'error': 'HackerRank user not found'}, status=404)
+
+        # A valid profile returns 200; non-existent users get redirected to /dashboard or 404
+        if response.status_code == 404 or 'dashboard' in response.url:
+            return Response({'error': f'HackerRank user "{handle}" not found. Please check the username.'}, status=404)
+
         if response.status_code != 200:
-            return Response({'error': f'HackerRank returned {response.status_code}'}, status=502)
+            return Response({'error': f'Could not reach HackerRank (status {response.status_code}). Try again later.'}, status=502)
 
-        data = response.json().get('model', {})
-        about = data.get('about', '') or ''
+        profile.hackerrank_handle = handle
+        profile.is_hackerrank_verified = True
+        profile.save()
+        return Response({'success': True, 'message': 'HackerRank account linked successfully!'})
 
-        if token in about:
-            profile.hackerrank_handle = handle
-            profile.is_hackerrank_verified = True
-            profile.save()
-            return Response({'success': True, 'message': 'HackerRank account verified!'})
-        else:
-            return Response({
-                'success': False,
-                'error': f"Token '{token}' not found in HackerRank About section. Please add it and try again."
-            }, status=400)
-
+    except req.exceptions.Timeout:
+        return Response({'error': 'HackerRank request timed out. Please try again.'}, status=503)
     except req.exceptions.RequestException as e:
         return Response({'error': f'Network error: {str(e)}'}, status=503)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response({'error': str(e)}, status=500)
 
 

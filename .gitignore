@@ -137,7 +137,10 @@ create_test_*.py
 create_superuser.py
 create_db.py
 
-# ── Thesis generation scripts ─────────────────────────────────────────────
+# ── Thesis / academic files (not part of the app) ────────────────────────
+docs/thesis-generation/
+*.docx
+codenest_comprehensive.docx
 generate_*.py
 add_lists_*.py
 replace_*.py
