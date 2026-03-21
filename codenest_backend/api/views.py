@@ -2729,11 +2729,37 @@ def send_otp(request):
         f"— The CodeNest Team"
     )
 
-    try:
-        send_mail(subject, message, None, [email], fail_silently=False)
-    except Exception as e:
-        logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
-        return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
+    # Use Brevo HTTP API — SMTP ports are blocked on Railway free tier
+    brevo_api_key = os.environ.get('BREVO_API_KEY', '')
+    if brevo_api_key:
+        try:
+            import requests as http_requests
+            resp = http_requests.post(
+                'https://api.brevo.com/v3/smtp/email',
+                headers={
+                    'api-key': brevo_api_key,
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'sender': {'name': 'CodeNest', 'email': os.environ.get('EMAIL_HOST_USER', 'a5a442001@smtp-brevo.com')},
+                    'to': [{'email': email}],
+                    'subject': subject,
+                    'textContent': message,
+                },
+                timeout=15
+            )
+            if resp.status_code not in (200, 201, 202):
+                logger.error(f"Brevo API error: {resp.status_code} {resp.text}")
+                return Response({"error": "Failed to send email. Please try again."}, status=500)
+        except Exception as e:
+            logger.error(f"Brevo HTTP error: {e}", exc_info=True)
+            return Response({"error": "Failed to send email. Please try again."}, status=500)
+    else:
+        try:
+            send_mail(subject, message, None, [email], fail_silently=False)
+        except Exception as e:
+            logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
+            return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
 
     return Response({"message": "OTP sent successfully."})
 
