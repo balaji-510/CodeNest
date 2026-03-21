@@ -2732,8 +2732,8 @@ def send_otp(request):
     try:
         send_mail(subject, message, None, [email], fail_silently=False)
     except Exception as e:
-        logger.error(f"Failed to send OTP email to {email}: {e}")
-        return Response({"error": "Failed to send email. Please try again."}, status=500)
+        logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
+        return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
 
     return Response({"message": "OTP sent successfully."})
 
