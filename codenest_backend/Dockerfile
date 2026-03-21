@@ -15,4 +15,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn codenest_backend.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 4 --timeout 300 --graceful-timeout 30 --keep-alive 5"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn codenest_backend.wsgi:application --bind 0.0.0.0:${PORT:-8000} --worker-class gevent --workers 2 --worker-connections 100 --timeout 120 --keep-alive 5"]
