@@ -152,6 +152,8 @@ CACHES = {
 }
 
 # ── App-specific ───────────────────────────────────────────────────────────────
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 TEACHER_REGISTRATION_CODE = os.environ.get('TEACHER_REGISTRATION_CODE', 'TEACHER2024')
 
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
