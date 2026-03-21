@@ -7,6 +7,7 @@
     max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
+    padding-top: 6rem;
 }
 
 .mentor-header {
@@ -155,12 +156,16 @@
     color: var(--text-secondary);
     font-weight: 600;
     border-bottom: 1px solid var(--glass-border);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
 }
 
 .student-table td {
     padding: 1.2rem 1rem;
     color: var(--text-primary);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
 }
 
 .student-info {
@@ -182,20 +187,49 @@
 }
 
 .status-badge {
-    padding: 0.25rem 0.75rem;
+    padding: 0.4rem 1rem;
     border-radius: 100px;
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid transparent;
 }
 
 .status-badge.active {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(16, 185, 129, 0.15);
     color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.active::before {
+    content: '●';
+    font-size: 0.6rem;
+    animation: pulse 2s ease-in-out infinite;
 }
 
 .status-badge.inactive {
-    background: rgba(244, 63, 94, 0.1);
+    background: rgba(244, 63, 94, 0.15);
     color: #f43f5e;
+    border-color: rgba(244, 63, 94, 0.3);
+}
+
+.status-badge.inactive::before {
+    content: '●';
+    font-size: 0.6rem;
+    opacity: 0.5;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .text-button {
@@ -243,12 +277,21 @@
 }
 
 .risk-count {
-    background: rgba(244, 63, 94, 0.1);
+    background: rgba(244, 63, 94, 0.15);
     color: #f43f5e;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1.2rem;
     border-radius: 100px;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.risk-count::before {
+    content: '⚠';
+    font-size: 1rem;
 }
 
 .risk-list {
@@ -279,12 +322,15 @@
 }
 
 .risk-badge {
-    padding: 0.3rem 0.8rem;
+    padding: 0.4rem 1rem;
     border-radius: 8px;
-    background: rgba(255, 171, 0, 0.1);
+    background: rgba(255, 171, 0, 0.15);
     color: #ffab00;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 171, 0, 0.3);
 }
 
 /* Modal Styles */
@@ -405,4 +451,35 @@
     /* Dark background */
     color: white;
     padding: 10px;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.mentor-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+    padding-bottom: 0;
+}
+
+.mentor-tab {
+    padding: 0.6rem 1.4rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    margin-bottom: -1px;
+}
+
+.mentor-tab:hover {
+    color: var(--text-primary, #f1f5f9);
+}
+
+.mentor-tab.active {
+    color: var(--primary-color, #38bdf8);
+    border-bottom-color: var(--primary-color, #38bdf8);
 }

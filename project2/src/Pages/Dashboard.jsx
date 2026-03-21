@@ -5,7 +5,7 @@ import Footer from "../Components/Footer";
 import { getUserStats, updateUserStats, getDailyChallenge, getCurrentUserStats, getUserStatsByUsername } from "../services/api";
 import { Trophy, Calendar, Zap, Star, ArrowRight, RefreshCw, BarChart3, Globe, Code2, Cpu, Shield, Loader, ExternalLink } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import ContributionHeatmap from "../Components/ContributionHeatmap";
+import ActivityHeatmap from "../Components/ActivityHeatmap";
 import { syncAllStats } from "../services/externalStats";
 import "../styles1/dashboard.css";
 
@@ -53,11 +53,17 @@ function Dashboard() {
 
     // Listen for custom event to update UI when stats change (e.g. from other tabs or components)
     window.addEventListener('statsUpdated', loadStats);
+    
+    // Auto-refresh dashboard every 30 seconds
+    const refreshInterval = setInterval(loadStats, 30000);
 
     const savedStats = localStorage.getItem('externalStatsCache');
     if (savedStats) setExternalStats(JSON.parse(savedStats));
 
-    return () => window.removeEventListener('statsUpdated', loadStats);
+    return () => {
+      window.removeEventListener('statsUpdated', loadStats);
+      clearInterval(refreshInterval);
+    };
   }, [username]);
 
   // Fetch Real Contests
@@ -89,6 +95,7 @@ function Dashboard() {
     if (stats.leetcode_handle && !stats.is_leetcode_verified) unverified.push("LeetCode");
     if (stats.codechef_handle && !stats.is_codechef_verified) unverified.push("CodeChef");
     if (stats.codeforces_handle && !stats.is_codeforces_verified) unverified.push("CodeForces");
+    if (stats.hackerrank_handle && !stats.is_hackerrank_verified) unverified.push("HackerRank");
 
     if (unverified.length > 0) {
       alert(`Please verify your account(s) for ${unverified.join(", ")} in Profile Settings before syncing.`);
@@ -100,7 +107,8 @@ function Dashboard() {
     const handles = {
       leetcode: stats.leetcode_handle,
       codechef: stats.codechef_handle,
-      codeforces: stats.codeforces_handle
+      codeforces: stats.codeforces_handle,
+      hackerrank: stats.hackerrank_handle,
     };
 
     const newStats = await syncAllStats(handles);
@@ -131,7 +139,7 @@ function Dashboard() {
   const radarData = stats?.skillStats?.map(item => ({
     subject: item.topic,
     A: item.solved,
-    B: Math.floor(item.total * 0.6), // Mock global average for comparison
+    B: Math.floor(item.solved * 0.7), // Global average (70% of user's performance as comparison)
     fullMark: item.total
   })) || [];
 
@@ -182,7 +190,7 @@ function Dashboard() {
           <>
             <div className="dashboard-header-container">
               <div className="dashboard-title">
-                <h1>Unified Dashboard: {username || 'User'}👋</h1>
+                <h1>Unified Dashboard: {username || localStorage.getItem('username') || 'User'}👋</h1>
                 <p>Analyzing performance across <strong>CodeNest, LeetCode, & more</strong></p>
               </div>
               <div className="dashboard-actions">
@@ -239,21 +247,47 @@ function Dashboard() {
                   {/* LeetCode Card */}
                   <div className="glass-effect external-card leetcode">
                     <div className="platform-header">
-                      <Code2 size={24} className="platform-logo" />
+                      <div className="platform-logo-wrap leetcode-logo">
+                        <img src="https://cdn.simpleicons.org/leetcode/FFA116" alt="LeetCode" width="32" height="32" />
+                      </div>
                       <span>LeetCode</span>
                     </div>
                     <div className="platform-body">
                       <div className="p-stat">
-                        <span className="p-label">Solved</span>
-                        <span className="p-value">{externalStats?.leetcode?.totalSolved || '--'}</span>
+                        <span className="p-label">Total Solved</span>
+                        <span className="p-value">{externalStats?.leetcode?.totalSolved ?? '--'}</span>
                       </div>
                       <div className="p-stat">
-                        <span className="p-label">Acceptance</span>
-                        <span className="p-value">{externalStats?.leetcode?.acceptanceRate || '--'}%</span>
+                        <span className="p-label">Easy</span>
+                        <span className="p-value" style={{ color: '#22c55e' }}>{externalStats?.leetcode?.easySolved ?? '--'}</span>
                       </div>
                       <div className="p-stat">
-                        <span className="p-label">Rank</span>
-                        <span className="p-value">#{externalStats?.leetcode?.ranking?.toLocaleString() || '--'}</span>
+                        <span className="p-label">Medium</span>
+                        <span className="p-value" style={{ color: '#f59e0b' }}>{externalStats?.leetcode?.mediumSolved ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Hard</span>
+                        <span className="p-value" style={{ color: '#ef4444' }}>{externalStats?.leetcode?.hardSolved ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Contest Rating</span>
+                        <span className="p-value">{externalStats?.leetcode?.contestRating || '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Contest Rank</span>
+                        <span className="p-value">#{externalStats?.leetcode?.contestGlobalRanking?.toLocaleString() || '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Contests</span>
+                        <span className="p-value">{externalStats?.leetcode?.contestsAttended || '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Top %</span>
+                        <span className="p-value">{externalStats?.leetcode?.topPercentage ? `${externalStats.leetcode.topPercentage}%` : '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Global Rank</span>
+                        <span className="p-value">#{externalStats?.leetcode?.ranking?.toLocaleString() ?? '--'}</span>
                       </div>
                     </div>
                   </div>
@@ -261,25 +295,35 @@ function Dashboard() {
                   {/* CodeChef Card */}
                   <div className="glass-effect external-card codechef">
                     <div className="platform-header">
-                      <Cpu size={24} className="platform-logo" />
+                      <div className="platform-logo-wrap codechef-logo">
+                        <img src="https://cdn.simpleicons.org/codechef/5B4638" alt="CodeChef" width="32" height="32" />
+                      </div>
                       <span>CodeChef</span>
                     </div>
                     <div className="platform-body">
                       <div className="p-stat">
                         <span className="p-label">Rating</span>
-                        <span className="p-value">{externalStats?.codechef?.rating || '--'}</span>
+                        <span className="p-value">{externalStats?.codechef?.currentRating ?? '--'}</span>
                       </div>
                       <div className="p-stat">
-                        <span className="p-label">Solved</span>
-                        <span className="p-value">{externalStats?.codechef?.totalSolved || '--'}</span>
+                        <span className="p-label">Highest</span>
+                        <span className="p-value">{externalStats?.codechef?.highestRating ?? '--'}</span>
                       </div>
                       <div className="p-stat">
                         <span className="p-label">Stars</span>
-                        <span className="p-value">{externalStats?.codechef?.stars || '--'}</span>
+                        <span className="p-value">{externalStats?.codechef?.stars ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Solved</span>
+                        <span className="p-value">{externalStats?.codechef?.totalSolved ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Contests</span>
+                        <span className="p-value">{externalStats?.codechef?.contestsParticipated ?? '--'}</span>
                       </div>
                       <div className="p-stat">
                         <span className="p-label">Global Rank</span>
-                        <span className="p-value">#{externalStats?.codechef?.globalRank || '--'}</span>
+                        <span className="p-value">#{externalStats?.codechef?.globalRank ?? '--'}</span>
                       </div>
                     </div>
                   </div>
@@ -287,21 +331,67 @@ function Dashboard() {
                   {/* Codeforces Card */}
                   <div className="glass-effect external-card codeforces">
                     <div className="platform-header">
-                      <Shield size={24} className="platform-logo" />
+                      <div className="platform-logo-wrap codeforces-logo">
+                        <img src="https://cdn.simpleicons.org/codeforces/1F8ACB" alt="Codeforces" width="32" height="32" />
+                      </div>
                       <span>Codeforces</span>
                     </div>
                     <div className="platform-body">
                       <div className="p-stat">
                         <span className="p-label">Rank</span>
-                        <span className="p-value">{externalStats?.codeforces?.rank || '--'}</span>
+                        <span className="p-value" style={{ textTransform: 'capitalize' }}>{externalStats?.codeforces?.rank ?? '--'}</span>
                       </div>
                       <div className="p-stat">
                         <span className="p-label">Rating</span>
-                        <span className="p-value">{externalStats?.codeforces?.rating || '--'}</span>
+                        <span className="p-value">{externalStats?.codeforces?.rating ?? '--'}</span>
                       </div>
                       <div className="p-stat">
                         <span className="p-label">Max Rating</span>
-                        <span className="p-value">{externalStats?.codeforces?.maxRating || '--'}</span>
+                        <span className="p-value">{externalStats?.codeforces?.maxRating ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Max Rank</span>
+                        <span className="p-value" style={{ textTransform: 'capitalize' }}>{externalStats?.codeforces?.maxRank ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Contribution</span>
+                        <span className="p-value">{externalStats?.codeforces?.contribution ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Organization</span>
+                        <span className="p-value" style={{ fontSize: '0.75rem' }}>{externalStats?.codeforces?.organization || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* HackerRank Card */}
+                  <div className="glass-effect external-card hackerrank">
+                    <div className="platform-header">
+                      <div className="platform-logo-wrap hackerrank-logo">
+                        <img src="https://cdn.simpleicons.org/hackerrank/2EC866" alt="HackerRank" width="32" height="32" />
+                      </div>
+                      <span>HackerRank</span>
+                    </div>
+                    <div className="platform-body">
+                      <div className="p-stat">
+                        <span className="p-label">Total Score</span>
+                        <span className="p-value">{externalStats?.hackerrank?.totalScore ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Stars</span>
+                        <span className="p-value">{externalStats?.hackerrank?.stars ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Badges</span>
+                        <span className="p-value">{externalStats?.hackerrank?.badges ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Tracks</span>
+                        <span className="p-value">{externalStats?.hackerrank?.tracks ?? '--'}</span>
+                      </div>
+                      <div className="p-stat">
+                        <span className="p-label">Certificates</span>
+                        <span className="p-value">{externalStats?.hackerrank?.certificates ?? '--'}</span>
                       </div>
                     </div>
                   </div>
@@ -332,7 +422,7 @@ function Dashboard() {
                   )}
                 </div>
 
-                <ContributionHeatmap data={stats.heatmapData} />
+                <ActivityHeatmap userId={stats?.user_profile?.user?.id} />
 
                 <section className="recent-activity scroll-reveal">
                   <h3>Recent Activity</h3>
@@ -428,12 +518,12 @@ function Dashboard() {
                       <div key={tp.topic} className="topic-item">
                         <div className="topic-info">
                           <span>{tp.topic}</span>
-                          <span>{Math.round((tp.solved / tp.total) * 100)}%</span>
+                          <span>{tp.total > 0 ? Math.round((tp.solved / tp.total) * 100) : 0}%</span>
                         </div>
                         <div className="progress-bar-bg">
                           <div
                             className="progress-bar-fill"
-                            style={{ width: `${(tp.solved / tp.total) * 100}%` }}
+                            style={{ width: `${tp.total > 0 ? (tp.solved / tp.total) * 100 : 0}%` }}
                           ></div>
                         </div>
                       </div>

@@ -1,212 +1,273 @@
 import { useState } from "react";
 import "../styles1/Login.css";
 import { useNavigate } from "react-router-dom";
-// import { flushSync } from "react-dom"; // Removed unused import
 import { login, register } from "../services/api";
 
+// Signup has 3 steps: 'form' → 'otp' → done (redirects to login)
 function AuthLogin() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [selectedRole, setSelectedRole] = useState("student");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [signupStep, setSignupStep] = useState("form"); // 'form' | 'otp'
+  const [otpValue, setOtpValue] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
     username: "",
-    email: "", // Keep email for registration if needed, but for login we use username
+    email: "",
     password: "",
     teacherCode: "",
-    branch: "CSE", // Default branch
+    branch: "CSE",
+    gender: "",
   });
 
   function handleChange(e) {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  async function handleSubmit(e) {
+  // Step 1: send OTP
+  async function handleSendOtp(e) {
     e.preventDefault();
     setError("");
+    setInfo("");
 
+    if (!formData.email) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    setOtpLoading(true);
     try {
-      if (isLoggedIn) {
-        // Login Logic
-        const response = await login(formData.username, formData.password);
+      const res = await fetch("http://localhost:8000/api/send-otp/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to send OTP.");
+        return;
+      }
+      setInfo(`OTP sent to ${formData.email}. Check your inbox (or server console in dev).`);
+      setSignupStep("otp");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
 
-        // Use the role from the backend response (which is now in localStorage too, but let's use the one from response for immediate check if available, or just check localStorage)
-        // actually api.login returns response.data
-        const role = response.role || localStorage.getItem('userRole');
+  // Step 2: verify OTP then register
+  async function handleVerifyAndRegister(e) {
+    e.preventDefault();
+    setError("");
+    setInfo("");
 
-        console.log(`Logged in as ${role}`);
+    if (!otpValue || otpValue.length !== 6) {
+      setError("Please enter the 6-digit OTP.");
+      return;
+    }
 
-        if (role === "teacher") {
-          navigate("/mentor-dashboard");
-        } else {
-          navigate(`/dashboard/${formData.username}`);
-        }
+    setOtpLoading(true);
+    try {
+      // Verify OTP
+      const verifyRes = await fetch("http://localhost:8000/api/verify-otp/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+          otp: otpValue,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setError(verifyData.error || "OTP verification failed.");
+        return;
+      }
+
+      // OTP verified — now register
+      const registerData = {
+        username: formData.username,
+        password: formData.password,
+        email: formData.email,
+        first_name: formData.firstname,
+        last_name: formData.lastname,
+        role: selectedRole,
+        teacher_code: selectedRole === "teacher" ? formData.teacherCode : "",
+        branch: selectedRole === "student" ? formData.branch : "CSE",
+        gender: formData.gender,
+      };
+
+      await register(registerData);
+      setInfo("Account created! Please log in.");
+      setSignupStep("form");
+      setIsLoggedIn(true);
+      setFormData({ firstname: "", lastname: "", username: "", email: "", password: "", teacherCode: "", branch: "CSE", gender: "" });
+      setOtpValue("");
+    } catch (err) {
+      if (err.response?.data) {
+        const d = err.response.data;
+        const msg = typeof d === "object" ? Object.values(d).flat().join(" ") : String(d);
+        setError(msg || "Registration failed.");
       } else {
-        // Register Logic
-        const registerData = {
-          username: formData.username,
-          password: formData.password,
-          email: formData.email,
-          first_name: formData.firstname,
-          last_name: formData.lastname,
-          role: selectedRole,
-          teacher_code: selectedRole === 'teacher' ? formData.teacherCode : "",
-          branch: selectedRole === 'student' ? formData.branch : "CSE"
-        };
+        setError("Registration failed. Please try again.");
+      }
+    } finally {
+      setOtpLoading(false);
+    }
+  }
 
-        await register(registerData);
-        alert("Registration successful! Please login.");
-        setIsLoggedIn(true);
+  async function handleLogin(e) {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    try {
+      const response = await login(formData.username, formData.password);
+      const role = response.role || localStorage.getItem("userRole");
+      if (role === "teacher") {
+        navigate("/mentor-dashboard");
+      } else {
+        navigate(`/dashboard/${formData.username}`);
       }
     } catch (err) {
-      console.error(err);
-      if (err.response && err.response.data) {
-        // specific error from backend
-        const errorData = err.response.data;
-        if (typeof errorData === 'object') {
-          // Handle object errors (e.g. {username: ["A user with that username already exists."]})
-          const messages = Object.values(errorData).flat().join(" ");
-          setError(messages || "Registration failed. Please try again.");
-        } else {
-          setError(typeof errorData === 'string' ? errorData : "An error occurred.");
-        }
+      if (err.response?.data) {
+        const d = err.response.data;
+        const msg = typeof d === "object" ? Object.values(d).flat().join(" ") : String(d);
+        setError(msg || "Invalid credentials.");
       } else {
-        setError("Invalid credentials or server error");
+        setError("Invalid credentials or server error.");
       }
     }
+  }
+
+  function switchToSignup() {
+    setIsLoggedIn(false);
+    setSignupStep("form");
+    setError("");
+    setInfo("");
+    setOtpValue("");
+  }
+
+  function switchToLogin() {
+    setIsLoggedIn(true);
+    setSignupStep("form");
+    setError("");
+    setInfo("");
+    setOtpValue("");
   }
 
   return (
     <div className="loginpage animate-fade-in">
       <div className="left">
         <div className="titlebox">
-          <p className="login-title">
-            Code<span>Nest</span>
-          </p>
-          <p className="login-subtitle">
-            Your Gateway to Coding Excellence
-          </p>
+          <p className="login-title">Code<span>Nest</span></p>
+          <p className="login-subtitle">Your Gateway to Coding Excellence</p>
         </div>
       </div>
+
       <div className="right">
         <div className="loginbox">
-          <h2>{isLoggedIn ? "Welcome Back" : "Create your Codenest account"}</h2>
+          <h2>
+            {isLoggedIn
+              ? "Welcome Back"
+              : signupStep === "otp"
+              ? "Verify Your Email"
+              : "Create your CodeNest account"}
+          </h2>
 
-          {/* Role Selection */}
-          <div className="role-selector">
-            <button
-              type="button"
-              className={`role-btn ${selectedRole === 'student' ? 'active' : ''}`}
-              onClick={() => setSelectedRole('student')}
-            >
-              Student
-            </button>
-            <button
-              type="button"
-              className={`role-btn ${selectedRole === 'teacher' ? 'active' : ''}`}
-              onClick={() => setSelectedRole('teacher')}
-            >
-              Teacher
-            </button>
-          </div>
-
+          {/* Role selector — only on signup form step */}
+          {!isLoggedIn && signupStep === "form" && (
+            <div className="role-selector">
+              <button type="button" className={`role-btn ${selectedRole === "student" ? "active" : ""}`} onClick={() => setSelectedRole("student")}>Student</button>
+              <button type="button" className={`role-btn ${selectedRole === "teacher" ? "active" : ""}`} onClick={() => setSelectedRole("teacher")}>Teacher</button>
+            </div>
+          )}
 
           {error && <div className="error-message">{error}</div>}
+          {info && <div className="info-message">{info}</div>}
 
-          <form onSubmit={handleSubmit}>
-            {!isLoggedIn && (
-              <>
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  className="input"
-                  name="firstname"
-                  onChange={handleChange}
-                  value={formData.firstname}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  className="input"
-                  name="lastname"
-                  onChange={handleChange}
-                  value={formData.lastname}
-                  required
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  name="email"
-                  className="input"
-                  onChange={handleChange}
-                  value={formData.email}
-                  required
-                />
-                {selectedRole === 'teacher' && (
-                  <input
-                    type="password"
-                    placeholder="Teacher Registration Code"
-                    name="teacherCode"
-                    className="input"
-                    onChange={handleChange}
-                    value={formData.teacherCode}
-                    required
-                  />
-                )}
-                {selectedRole === 'student' && (
-                  <select
-                    name="branch"
-                    className="input"
-                    onChange={handleChange}
-                    value={formData.branch}
-                    required
-                  >
-                    <option value="CSE">CSE</option>
-                    <option value="CSM">CSM</option>
-                    <option value="CSD">CSD</option>
-                    <option value="ECE">ECE</option>
-                    <option value="MECH">MECH</option>
-                    <option value="CIVIL">CIVIL</option>
-                  </select>
-                )}
-              </>
-            )}
-            <input
-              type="text"
-              placeholder={isLoggedIn ? "Username or Email" : "Username"}
-              name="username"
-              className="input"
-              onChange={handleChange}
-              value={formData.username}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              name="password"
-              className="input"
-              onChange={handleChange}
-              value={formData.password}
-              required
-            />
-            <button type="submit">
-              {isLoggedIn ? "Login" : "Join CodeNest"}
-            </button>
-            <p onClick={() => setIsLoggedIn(!isLoggedIn)} className="toggle-auth">
-              {isLoggedIn
-                ? "Don't have an account? Sign Up"
-                : "Already have an account? Login"}
-            </p>
-          </form>
+          {/* LOGIN FORM */}
+          {isLoggedIn && (
+            <form onSubmit={handleLogin}>
+              <input type="text" placeholder="Username or Email" name="username" className="input" onChange={handleChange} value={formData.username} required />
+              <input type="password" placeholder="Password" name="password" className="input" onChange={handleChange} value={formData.password} required />
+              <button type="submit">Login</button>
+              <p onClick={switchToSignup} className="toggle-auth">Don't have an account? Sign Up</p>
+            </form>
+          )}
+
+          {/* SIGNUP STEP 1: fill form + send OTP */}
+          {!isLoggedIn && signupStep === "form" && (
+            <form onSubmit={handleSendOtp}>
+              <input type="text" placeholder="First Name" className="input" name="firstname" onChange={handleChange} value={formData.firstname} required />
+              <input type="text" placeholder="Last Name" className="input" name="lastname" onChange={handleChange} value={formData.lastname} required />
+              <input type="text" placeholder="Username" name="username" className="input" onChange={handleChange} value={formData.username} required />
+              <input type="email" placeholder="Email" name="email" className="input" onChange={handleChange} value={formData.email} required />
+              <input type="password" placeholder="Password" name="password" className="input" onChange={handleChange} value={formData.password} required />
+              {selectedRole === "teacher" && (
+                <input type="password" placeholder="Teacher Registration Code" name="teacherCode" className="input" onChange={handleChange} value={formData.teacherCode} required />
+              )}
+              {selectedRole === "student" && (
+                <select name="branch" className="input" onChange={handleChange} value={formData.branch} required>
+                  <option value="CSE">CSE</option>
+                  <option value="CSM">CSM</option>
+                  <option value="CSD">CSD</option>
+                  <option value="ECE">ECE</option>
+                  <option value="MECH">MECH</option>
+                  <option value="CIVIL">CIVIL</option>
+                </select>
+              )}
+              <select name="gender" className="input" onChange={handleChange} value={formData.gender} required>
+                <option value="" disabled>Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <button type="submit" disabled={otpLoading}>
+                {otpLoading ? "Sending OTP..." : "Send Verification OTP"}
+              </button>
+              <p onClick={switchToLogin} className="toggle-auth">Already have an account? Login</p>
+            </form>
+          )}
+
+          {/* SIGNUP STEP 2: enter OTP */}
+          {!isLoggedIn && signupStep === "otp" && (
+            <form onSubmit={handleVerifyAndRegister}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1rem", textAlign: "center" }}>
+                Enter the 6-digit code sent to <strong>{formData.email}</strong>
+              </p>
+              <input
+                type="text"
+                placeholder="Enter OTP"
+                className="input"
+                value={otpValue}
+                onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                maxLength={6}
+                style={{ letterSpacing: "0.4rem", fontSize: "1.4rem", textAlign: "center" }}
+                required
+              />
+              <button type="submit" disabled={otpLoading}>
+                {otpLoading ? "Verifying..." : "Verify & Create Account"}
+              </button>
+              <p
+                onClick={handleSendOtp}
+                className="toggle-auth"
+                style={{ cursor: otpLoading ? "not-allowed" : "pointer" }}
+              >
+                Didn't receive it? Resend OTP
+              </p>
+              <p onClick={() => { setSignupStep("form"); setError(""); setInfo(""); }} className="toggle-auth">
+                ← Back to signup form
+              </p>
+            </form>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
 export default AuthLogin;

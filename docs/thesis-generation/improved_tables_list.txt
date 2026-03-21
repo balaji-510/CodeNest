@@ -1,0 +1,29 @@
+IMPROVED LIST OF TABLES FOR CODENEST
+======================================================================
+
+Table 2.1: Comparison of Competitive Programming Platforms			19
+Table 2.2: AI-Based vs Traditional Learning Systems			21
+Table 2.3: Code Execution Security Approaches			25
+Table 3.1: Existing System Limitations vs Proposed Solutions			35
+Table 3.2: Feature Comparison: CodeNest vs Other Platforms			38
+Table 4.1: Functional Requirements by Module			47
+Table 4.2: Non-Functional Requirements Specifications			50
+Table 4.3: Hardware Requirements (Development vs Production)			52
+Table 4.4: Software Requirements and Versions			54
+Table 4.5: Technology Stack Components			56
+Table 5.1: Database Tables and Their Purposes			63
+Table 5.2: Database Relationships and Cardinality			64
+Table 5.3: Module Responsibilities and Dependencies			68
+Table 5.4: API Endpoints by Category			70
+Table 6.1: Programming Language Support Details			85
+Table 6.2: Docker Container Resource Limits			87
+Table 6.3: Security Measures Implementation			91
+Table 7.1: Performance Test Results Summary			107
+Table 7.2: User Testing Feedback Statistics			111
+Table 7.3: Feature Comparison with Existing Platforms			115
+Table 7.4: System Performance Metrics			108
+Table 8.1: Challenges Encountered and Solutions			123
+Table 8.2: Implementation Issues and Resolutions			126
+
+======================================================================
+Total: 23 tables

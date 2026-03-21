@@ -16,6 +16,14 @@ class UserProfile(models.Model):
     linkedin_link = models.URLField(blank=True, default='')
     twitter_link = models.URLField(blank=True, default='')
     
+    # Gender
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    ]
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, default='')
+
     # Verification Fields
     leetcode_handle = models.CharField(max_length=50, blank=True, null=True)
     is_leetcode_verified = models.BooleanField(default=False)
@@ -27,10 +35,20 @@ class UserProfile(models.Model):
     codeforces_handle = models.CharField(max_length=50, blank=True, null=True)
     is_codeforces_verified = models.BooleanField(default=False)
 
+    hackerrank_handle = models.CharField(max_length=50, blank=True, null=True)
+    is_hackerrank_verified = models.BooleanField(default=False)
+
     def save(self, *args, **kwargs):
         if not self.verification_token:
             import uuid
             self.verification_token = f"CN-{str(uuid.uuid4())[:8]}"
+        # Set gender-based default avatar if still using the generic default
+        if self.avatar == 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' or not self.avatar:
+            seed = self.user.username if self.user_id else 'user'
+            if self.gender == 'female':
+                self.avatar = f'https://api.dicebear.com/7.x/avataaars/svg?seed={seed}&hair=longHair&accessories=prescription02&clothesColor=pink'
+            else:
+                self.avatar = f'https://api.dicebear.com/7.x/avataaars/svg?seed={seed}'
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -42,9 +60,16 @@ class Problem(models.Model):
         ('Medium', 'Medium'),
         ('Hard', 'Hard'),
     ]
+
+    DIFFICULTY_POINTS = {
+        'Easy': 10,
+        'Medium': 15,
+        'Hard': 20,
+    }
     
     title = models.CharField(max_length=255)
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
+    points = models.IntegerField(default=10)  # Easy=10, Medium=15, Hard=20
     topic = models.CharField(max_length=100)
     platform = models.CharField(max_length=50) # e.g. LeetCode, CodeChef
     url = models.URLField(blank=True, null=True) # Official problem URL
@@ -55,6 +80,11 @@ class Problem(models.Model):
     starter_code = models.TextField(blank=True, default='{}') # Storing as JSON string
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        # Always derive points from difficulty
+        self.points = self.DIFFICULTY_POINTS.get(self.difficulty, 10)
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return self.title
@@ -118,13 +148,7 @@ class Submission(models.Model):
             models.Index(fields=['created_at']),
             models.Index(fields=['user', 'created_at']),
         ]
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'problem'],
-                condition=models.Q(status='ACCEPTED'),
-                name='unique_accepted_submission'
-            )
-        ]
+        # Removed unique constraint to allow multiple submissions
 
     def __str__(self):
         return f"{self.user.username} - {self.problem.title} ({self.status})"
@@ -407,3 +431,120 @@ class ContestSubmission(models.Model):
     
     def __str__(self):
         return f"{self.participant.user.username} - {self.problem.title}"
+
+
+class Discussion(models.Model):
+    """Discussion forum posts"""
+    CATEGORY_CHOICES = [
+        ('General', 'General'),
+        ('Algorithms', 'Algorithms'),
+        ('Data Structures', 'Data Structures'),
+        ('Interview Prep', 'Interview Prep'),
+        ('Competitive Programming', 'Competitive Programming'),
+    ]
+    
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussions')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='General')
+    tags = models.JSONField(default=list, blank=True)
+    votes = models.IntegerField(default=0)
+    views = models.IntegerField(default=0)
+    is_pinned = models.BooleanField(default=False)
+    is_locked = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+        indexes = [
+            models.Index(fields=['author']),
+            models.Index(fields=['category']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return self.title
+
+
+class DiscussionReply(models.Model):
+    """Replies to discussion posts"""
+    discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE, related_name='replies')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussion_replies')
+    content = models.TextField()
+    parent_reply = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='child_replies')
+    votes = models.IntegerField(default=0)
+    is_solution = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['discussion']),
+            models.Index(fields=['author']),
+        ]
+    
+    def __str__(self):
+        return f"Reply by {self.author.username} on {self.discussion.title}"
+
+
+class DiscussionVote(models.Model):
+    """Track user votes on discussions and replies"""
+    VOTE_CHOICES = [
+        ('up', 'Upvote'),
+        ('down', 'Downvote'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discussion_votes')
+    discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE, null=True, blank=True, related_name='user_votes')
+    reply = models.ForeignKey(DiscussionReply, on_delete=models.CASCADE, null=True, blank=True, related_name='user_votes')
+    vote_type = models.CharField(max_length=4, choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = [
+            ('user', 'discussion'),
+            ('user', 'reply'),
+        ]
+        indexes = [
+            models.Index(fields=['user', 'discussion']),
+            models.Index(fields=['user', 'reply']),
+        ]
+    
+    def __str__(self):
+        target = self.discussion or self.reply
+        return f"{self.user.username} {self.vote_type}d {target}"
+
+
+class Checkpoint(models.Model):
+    """Teacher-defined targets for students (problems to solve, ratings to achieve)"""
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='checkpoints')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default='')
+
+    # CoderNest targets
+    cn_problems = models.IntegerField(default=0, help_text='Min problems solved on CoderNest')
+    cn_score = models.IntegerField(default=0, help_text='Min score on CoderNest')
+
+    # Platform targets
+    lc_problems = models.IntegerField(default=0)
+    lc_rating = models.IntegerField(default=0)
+    cc_problems = models.IntegerField(default=0)
+    cc_rating = models.IntegerField(default=0)
+    cf_problems = models.IntegerField(default=0)
+    cf_rating = models.IntegerField(default=0)
+
+    # Targeting
+    target_batch = models.CharField(max_length=50, blank=True, default='All')
+    target_branch = models.CharField(max_length=50, blank=True, default='All')
+
+    deadline = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title

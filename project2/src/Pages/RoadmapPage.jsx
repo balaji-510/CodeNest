@@ -93,7 +93,7 @@ const RoadmapPage = () => {
                             </div>
 
                             <div className="nodes-container">
-                                {roadmap.nodes.map((node, index) => (
+                                {(roadmap.nodes || []).map((node, index) => (
                                     <div key={node.id} className={`node-item ${node.status}`}>
                                         <div className="node-icon">
                                             {node.status === 'completed' ? <CheckCircle2 size={24} /> :
@@ -105,7 +105,7 @@ const RoadmapPage = () => {
                                             <p>{node.status === 'completed' ? 'Mastered' :
                                                 node.status === 'current' ? 'In Progress' : 'Locked'}</p>
                                         </div>
-                                        {index < roadmap.nodes.length - 1 && <div className="connector"></div>}
+                                        {index < (roadmap.nodes || []).length - 1 && <div className="connector"></div>}
                                     </div>
                                 ))}
                             </div>

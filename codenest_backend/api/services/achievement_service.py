@@ -16,36 +16,49 @@ class AchievementService:
         """
         newly_earned = []
         
-        # Get all active achievement definitions
-        achievement_defs = AchievementDefinition.objects.filter(is_active=True)
-        
-        for achievement_def in achievement_defs:
-            # Skip if user already has this achievement
-            if Achievement.objects.filter(user=user, achievement_def=achievement_def).exists():
-                continue
+        try:
+            # Get all active achievement definitions
+            achievement_defs = AchievementDefinition.objects.filter(is_active=True)
             
-            # Check if user qualifies for this achievement
-            if AchievementService._check_achievement(user, achievement_def, submission):
-                # Award the achievement
-                achievement = Achievement.objects.create(
-                    user=user,
-                    achievement_def=achievement_def,
-                    type=achievement_def.category,
-                    title=achievement_def.name,
-                    description=achievement_def.description,
-                    icon=achievement_def.icon,
-                    progress=100,
-                    target=100
-                )
-                newly_earned.append(achievement)
-                
-                # Create notification
-                Notification.objects.create(
-                    user=user,
-                    title='🏆 Achievement Unlocked!',
-                    message=f'You earned "{achievement_def.name}": {achievement_def.description}',
-                    link=f'/achievements'
-                )
+            for achievement_def in achievement_defs:
+                try:
+                    # Skip if user already has this achievement
+                    if Achievement.objects.filter(user=user, achievement_def=achievement_def).exists():
+                        continue
+                    
+                    # Check if user qualifies for this achievement
+                    if AchievementService._check_achievement(user, achievement_def, submission):
+                        # Award the achievement
+                        achievement = Achievement.objects.create(
+                            user=user,
+                            achievement_def=achievement_def,
+                            type=achievement_def.category,
+                            title=achievement_def.name,
+                            description=achievement_def.description,
+                            icon=achievement_def.icon,
+                            progress=100,
+                            target=100
+                        )
+                        newly_earned.append(achievement)
+                        
+                        # Create notification
+                        Notification.objects.create(
+                            recipient=user,
+                            title='🏆 Achievement Unlocked!',
+                            message=f'You earned "{achievement_def.name}": {achievement_def.description}',
+                            link=f'/achievements'
+                        )
+                except Exception as e:
+                    # Log error but continue checking other achievements
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error checking achievement {achievement_def.name}: {str(e)}")
+                    continue
+        except Exception as e:
+            # Log error but don't fail the submission
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in check_and_award_achievements: {str(e)}")
         
         return newly_earned
     

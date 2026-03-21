@@ -8,8 +8,12 @@ from .views import (
     execute_code, get_mentor_stats, user_dashboard_stats_by_username,
     update_profile, get_roadmap, current_user_dashboard_stats, platform_stats,
     get_analytics, TestCaseViewSet, get_problem_testcases, AchievementViewSet,
-    AchievementDefinitionViewSet, get_activity_heatmap, ContestViewSet, ai_assistant
+    AchievementDefinitionViewSet, get_activity_heatmap, ContestViewSet, ai_assistant,
+    leetcode_stats_proxy, codechef_stats_proxy, send_otp, verify_otp,
+    scoreboard_data, student_activity, checkpoints, checkpoint_delete,
+    hackerrank_stats_proxy, verify_hackerrank_account
 )
+from .discussion_views import DiscussionViewSet, DiscussionReplyViewSet
 from rest_framework_simplejwt.views import TokenRefreshView
 
 router = DefaultRouter()
@@ -21,6 +25,8 @@ router.register(r'testcases', TestCaseViewSet)
 router.register(r'achievements', AchievementViewSet, basename='achievement')
 router.register(r'achievement-definitions', AchievementDefinitionViewSet, basename='achievement-definition')
 router.register(r'contests', ContestViewSet, basename='contest')
+router.register(r'discussions', DiscussionViewSet, basename='discussion')
+router.register(r'discussion-replies', DiscussionReplyViewSet, basename='discussion-reply')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -56,6 +62,12 @@ urlpatterns = [
     # Analytics
     path('analytics/', get_analytics, name='analytics'),
     
+    # LeetCode Stats Proxy (avoids CORS)
+    path('leetcode-stats/', leetcode_stats_proxy, name='leetcode-stats'),
+
+    # CodeChef Stats Proxy (avoids CORS)
+    path('codechef-stats/', codechef_stats_proxy, name='codechef-stats'),
+    
     # Activity Heatmap
     path('activity-heatmap/', get_activity_heatmap, name='activity-heatmap'),
     
@@ -64,4 +76,20 @@ urlpatterns = [
     
     # AI Assistant
     path('ai-assistant/', ai_assistant, name='ai-assistant'),
+
+    # OTP Email Verification
+    path('send-otp/', send_otp, name='send-otp'),
+    path('verify-otp/', verify_otp, name='verify-otp'),
+
+    # Scoreboard
+    path('scoreboard/', scoreboard_data, name='scoreboard'),
+
+    # Student Activity & Checkpoints
+    path('student-activity/', student_activity, name='student-activity'),
+    path('checkpoints/', checkpoints, name='checkpoints'),
+    path('checkpoints/<int:pk>/delete/', checkpoint_delete, name='checkpoint-delete'),
+
+    # HackerRank
+    path('hackerrank-stats/', hackerrank_stats_proxy, name='hackerrank-stats'),
+    path('verify-hackerrank/', verify_hackerrank_account, name='verify-hackerrank'),
 ]

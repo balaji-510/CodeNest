@@ -76,9 +76,25 @@ const Navbar = () => {
   };
 
   const username = localStorage.getItem("username");
+
+  const handleLogoClick = () => {
+    if (isLoggedIn && username) {
+      if (userRole === "teacher") {
+        navigate("/mentor-dashboard");
+      } else {
+        navigate(`/dashboard/${username}`);
+      }
+    } else {
+      navigate("/");
+    }
+  };
+
   const studentLinks = [
-    { path: isLoggedIn ? `/dashboard/${username}` : "/", label: isLoggedIn ? "Dashboard" : "Home" },
+    { path: `/dashboard/${username}`, label: "Dashboard" },
     { path: "/problems", label: "Problems" },
+    { path: "/contests", label: "Contests" },
+    { path: "/submissions", label: "Submissions" },
+    { path: "/achievements", label: "Achievements" },
     { path: "/discuss", label: "Discuss" },
     { path: "/roadmap", label: "Roadmap" },
   ];
@@ -87,13 +103,16 @@ const Navbar = () => {
     { path: "/mentor-dashboard", label: "Mentor Panel" },
     { path: "/problems", label: "Problems" },
     { path: "/analytics", label: "Class Stats" },
+    { path: "/scoreboard", label: "Scoreboard" },
+    { path: "/student-activity", label: "Activity" },
   ];
 
-  const navLinks = userRole === "teacher" ? teacherLinks : studentLinks;
+  // Only show nav links when logged in
+  const navLinks = isLoggedIn ? (userRole === "teacher" ? teacherLinks : studentLinks) : [];
 
   return (
     <nav className="navbar glass-effect sticky">
-      <div className="nav-logo" onClick={() => navigate("/")}>
+      <div className="nav-logo" onClick={handleLogoClick}>
         <div className="logo-symbol">C</div>
         <span className="logo-text">Code<span>Nest</span></span>
       </div>
@@ -155,7 +174,7 @@ const Navbar = () => {
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '12px' }}
               >
-                <div className="user-avatar-small" style={{ width: '24px', height: '24px', background: 'var(--primary-color)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'white' }}>AR</div>
+                <div className="user-avatar-small" style={{ width: '24px', height: '24px', background: 'var(--primary-color)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'white' }}>{username ? username.slice(0, 2).toUpperCase() : 'U'}</div>
                 <ChevronDown size={14} className={showUserDropdown ? 'rotate-180' : ''} style={{ transition: '0.3s' }} />
               </button>
 

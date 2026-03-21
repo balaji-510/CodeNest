@@ -12,6 +12,20 @@ function Problems() {
     const [searchTerm, setSearchterm] = useState("");
     const [problems, setProblems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [solvedIds, setSolvedIds] = useState(new Set());
+    const userRole = localStorage.getItem('userRole');
+
+    useEffect(() => {
+        const userId = localStorage.getItem('user_id');
+        if (userId) {
+            fetch(`http://localhost:8000/api/submissions/solved_problems/?user=${userId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+            })
+                .then(r => r.ok ? r.json() : [])
+                .then(ids => setSolvedIds(new Set(ids)))
+                .catch(() => {});
+        }
+    }, []);
 
     useEffect(() => {
         const fetchProblems = async () => {
@@ -38,7 +52,7 @@ function Problems() {
         return () => clearTimeout(timeoutId);
     }, [selectDifficulty, selectedTopic, searchTerm]);
 
-    const topics = ["All", "Arrays", "Strings", "Stack", "Queue", "LinkedList", "Tree", "Graph", "DP"];
+    const topics = ["All", "Arrays", "Strings", "Linked Lists", "Trees", "Graphs", "Dynamic Programming", "Binary Search", "Stacks", "Hashing", "Recursion"];
 
     return (
         <>
@@ -46,12 +60,31 @@ function Problems() {
                 <Navbar />
                 <div className="problem-header">
                     <p>Problems</p>
-                    <input
-                        type="text"
-                        placeholder="Search Problems..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchterm(e.target.value)}
-                    />
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="Search Problems..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchterm(e.target.value)}
+                        />
+                        {userRole === 'teacher' && (
+                            <button 
+                                onClick={() => navigate('/add-problem')}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: 'var(--primary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                + Add Problem
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="problem-buttons">
                     <button
@@ -96,6 +129,7 @@ function Problems() {
                     <table>
                         <thead>
                             <tr>
+                                <th style={{ width: '32px' }}></th>
                                 <th className="problem-title">Title</th>
                                 <th className="problem-topic">Topic</th>
                                 <th className="problem-Difficulty">Difficulty</th>
@@ -110,6 +144,11 @@ function Problems() {
                                         key={problem.id}
                                         className="scroll-reveal"
                                     >
+                                        <td style={{ textAlign: 'center' }}>
+                                            {solvedIds.has(problem.id) && (
+                                                <span title="Solved" style={{ color: '#22c55e', fontSize: '1rem' }}>✓</span>
+                                            )}
+                                        </td>
                                         <td
                                             className="problem-title"
                                             onClick={() => navigate(`/solve/${problem.id}`)}

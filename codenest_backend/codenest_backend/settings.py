@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -147,6 +151,23 @@ AUTHENTICATION_BACKENDS = [
 
 TEACHER_REGISTRATION_CODE = 'TEACHER2024'
 
+# Email Configuration (loaded from .env)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', f'CodeNest <{EMAIL_HOST_USER}>')
+
+# Cache for OTP storage (in-memory for dev)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'codenest-otp-cache',
+    }
+}
+
 
 
 # AI Service Configuration
@@ -156,6 +177,6 @@ TEACHER_REGISTRATION_CODE = 'TEACHER2024'
 # - OpenAI: https://platform.openai.com/
 # - Google Gemini: https://makersuite.google.com/app/apikey
 
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', 'your-groq-api-key-here')
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'your-api-key-here')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'your-api-key-here')

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Added useParams, useNavigate
-import { ExternalLink, Edit2, Check, X, Shield, Code2, Terminal, Cpu, Camera } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ExternalLink, Edit2, Check, X, Shield, Code2, Terminal, Cpu, Camera, Trophy } from 'lucide-react';
 import '../styles1/Profile.css';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
-import { getUserStats, getUserStatsByUsername, updateProfile } from '../services/api'; // Added updateProfile
+import ActivityHeatmap from '../Components/ActivityHeatmap';
+import { getUserStats, getUserStatsByUsername, updateProfile, getVerificationToken } from '../services/api';
 
 
 
@@ -20,38 +21,33 @@ const ProfilePage = () => {
     const isOwnProfile = !paramUsername || paramUsername === loggedInUsername;
 
     // Linked Accounts State
-    const [linkedAccounts, setLinkedAccounts] = useState(() => {
-        const saved = localStorage.getItem('linkedAccounts');
-        return saved ? JSON.parse(saved) : {
-            leetcode: 'arivera_lc',
-            codechef: 'arivera_cc',
-            hackerrank: 'arivera_hr',
-            codeforces: 'arivera_cf'
-        };
+    const [linkedAccounts, setLinkedAccounts] = useState({
+        leetcode: '',
+        codechef: '',
+        hackerrank: '',
+        codeforces: ''
     });
     const [tempAccounts, setTempAccounts] = useState({ ...linkedAccounts });
 
     // User Profile State
     const [user, setUser] = useState({
-        name: "Alex Rivera",
-        username: "@arivera_dev",
-        bio: "Full-stack developer | Open source enthusiast | Problem solver at heart. Always learning and building something new.",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-        skills: ["React", "Node.js", "Python", "TypeScript", "GraphQL", "PostgreSQL"],
+        name: "Loading...",
+        username: "@loading",
+        bio: "Loading profile...",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
+        skills: [],
         stats: {
-            solved: 452,
-            rank: 1240,
-            points: 15420,
-            streak: 15
+            solved: 0,
+            rank: 0,
+            points: 0,
+            streak: 0
         },
         recentActivity: [],
-        badges: [
-            { id: 1, name: "Fast Learner", icon: "⚡", color: "#fbbf24", description: "Completed 10 problems in a day" },
-            { id: 2, name: "Night Owl", icon: "🦉", color: "#818cf8", description: "Solved problems after midnight" },
-            { id: 3, name: "Gold Solver", icon: "🥇", color: "#f59e0b", description: "Top 1% in Weekly Contest" },
-            { id: 4, name: "Bug Hunter", icon: "🛡️", color: "#ec4899", description: "Identified and fixed 5 edge cases" }
-        ]
+        badges: []
     });
+    
+    const [achievements, setAchievements] = useState([]);
+    const [achievementsLoading, setAchievementsLoading] = useState(true);
 
     const [tempUser, setTempUser] = useState({ ...user });
 
@@ -66,31 +62,43 @@ const ProfilePage = () => {
                     currentStats = await getUserStats(userId);
                 }
 
+                // Get verification status
+                let verificationData = { leetcode_verified: false, codechef_verified: false, codeforces_verified: false };
+                try {
+                    verificationData = await getVerificationToken();
+                } catch (err) {
+                    console.log("Could not fetch verification status", err);
+                }
+
                 setUser(prev => ({
                     ...prev,
-                    name: currentStats.full_name || prev.name,
-                    username: `@${currentStats.username}` || prev.username,
-                    // bio: currentStats.bio || prev.bio,
+                    name: currentStats.full_name || currentStats.username,
+                    username: `@${currentStats.username}`,
+                    bio: currentStats.bio || "No bio yet. Edit your profile to add one!",
+                    avatar: currentStats.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentStats.username}`,
+                    skills: currentStats.skills || [],
                     stats: {
                         solved: currentStats.problemsSolved,
                         rank: currentStats.rank,
                         points: currentStats.problemsSolved * 10 + currentStats.activeDays * 5,
                         streak: currentStats.activeDays
                     },
-                    recentActivity: currentStats.recentSubmissions.map(sub => ({
+                    recentActivity: (currentStats.recentSubmissions || []).map(sub => ({
                         id: sub.id,
-                        type: sub.status === 'Solved' ? 'Solved' : 'Submission',
+                        type: sub.status === 'ACCEPTED' ? 'Solved' : 'Attempted',
                         problem: sub.title,
                         difficulty: sub.difficulty || 'Medium',
                         status: sub.status,
-                        time: sub.date // simple date for now
-                    }))
+                        time: sub.date
+                    })),
+                    badges: [] // TODO: Fetch from achievements API when implemented
                 }));
 
                 const accounts = {
                     leetcode: currentStats.leetcode_handle || '',
                     codechef: currentStats.codechef_handle || '',
-                    codeforces: currentStats.codeforces_handle || ''
+                    codeforces: currentStats.codeforces_handle || '',
+                    hackerrank: currentStats.hackerrank_handle || ''
                 };
 
                 setLinkedAccounts(prev => ({ ...prev, ...accounts }));
@@ -105,6 +113,45 @@ const ProfilePage = () => {
 
         fetchStats();
     }, [paramUsername]);
+    
+    // Fetch user achievements
+    useEffect(() => {
+        const fetchAchievements = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                let userId;
+                
+                if (paramUsername) {
+                    // Get user ID from username
+                    const stats = await getUserStatsByUsername(paramUsername);
+                    userId = stats.user_id;
+                } else {
+                    userId = localStorage.getItem('user_id');
+                }
+                
+                const response = await fetch(`http://localhost:8000/api/achievements/?user_id=${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Filter to show only unlocked achievements (progress === 100)
+                    const unlocked = data.filter(ach => ach.progress === 100);
+                    setAchievements(unlocked);
+                }
+            } catch (error) {
+                console.error('Failed to fetch achievements:', error);
+            } finally {
+                setAchievementsLoading(false);
+            }
+        };
+        
+        if (!isLoading) {
+            fetchAchievements();
+        }
+    }, [paramUsername, isLoading]);
 
     const handleSaveAccounts = () => {
         setLinkedAccounts({ ...tempAccounts });
@@ -242,24 +289,19 @@ const ProfilePage = () => {
                         <div className="glass-effect profile-card accounts-card scroll-reveal">
                             <div className="card-header-flex">
                                 <h3 className="card-title">Coding Profiles</h3>
-                                {!isEditingAccounts ? (
+                                {isOwnProfile && (
                                     <button
                                         className="icon-btn-small magnetic-hover"
-                                        onClick={() => setIsEditingAccounts(true)}
-                                        title="Edit Accounts"
+                                        onClick={() => navigate('/settings')}
+                                        title="Manage Accounts in Settings"
                                     >
                                         <Edit2 size={16} />
                                     </button>
-                                ) : (
-                                    <div className="edit-actions-small">
-                                        <button className="icon-btn-small success magnetic-hover" onClick={handleSaveAccounts}><Check size={16} /></button>
-                                        <button className="icon-btn-small danger magnetic-hover" onClick={handleCancelAccounts}><X size={16} /></button>
-                                    </div>
                                 )}
                             </div>
 
                             <div className="accounts-list">
-                                {Object.entries(tempAccounts).map(([platform, username]) => (
+                                {Object.entries(linkedAccounts).filter(([_, username]) => username).map(([platform, username]) => (
                                     <div key={platform} className="account-item">
                                         <div className="account-platform-info">
                                             {platform === 'leetcode' && <Code2 size={18} className="platform-icon leetcode" />}
@@ -269,27 +311,35 @@ const ProfilePage = () => {
                                             <span className="platform-name">{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
                                         </div>
 
-                                        {isEditingAccounts ? (
-                                            <input
-                                                type="text"
-                                                className="account-input"
-                                                value={username}
-                                                readOnly
-                                                disabled
-                                                title="Linked accounts cannot be changed manually."
-                                            />
-                                        ) : (
-                                            <a
-                                                href={getPlatformUrl(platform, username)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="account-link"
-                                            >
-                                                {username || 'Link Account'} <ExternalLink size={12} />
-                                            </a>
-                                        )}
+                                        <a
+                                            href={getPlatformUrl(platform, username)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="account-link"
+                                        >
+                                            {username} <ExternalLink size={12} />
+                                        </a>
                                     </div>
                                 ))}
+                                {Object.values(linkedAccounts).every(v => !v) && (
+                                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                                        <p>No accounts linked yet.</p>
+                                        {isOwnProfile && (
+                                            <button
+                                                onClick={() => navigate('/settings')}
+                                                style={{
+                                                    marginTop: '1rem',
+                                                    padding: '0.5rem 1rem',
+                                                    background: 'var(--primary-color)',
+                                                    borderRadius: '8px',
+                                                    color: 'white'
+                                                }}
+                                            >
+                                                Link Accounts
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -337,20 +387,53 @@ const ProfilePage = () => {
                         </div>
 
                         <div className="glass-effect profile-card badges-card scroll-reveal">
-                            <h3 className="card-title">Achievements</h3>
-                            <div className="badges-grid">
-                                {user.badges.map(badge => (
-                                    <div key={badge.id} className="badge-item magnetic-hover" title={badge.description}>
-                                        <div className="badge-icon" style={{ backgroundColor: `${badge.color}20`, borderColor: badge.color }}>
-                                            {badge.icon}
-                                        </div>
-                                        <div className="badge-info">
-                                            <h4>{badge.name}</h4>
-                                            <p>{badge.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="card-header-with-action">
+                                <h3 className="card-title">
+                                    <Trophy size={24} />
+                                    Achievements
+                                </h3>
+                                {achievements.length > 0 && (
+                                    <button 
+                                        className="view-all-btn"
+                                        onClick={() => navigate('/achievements')}
+                                    >
+                                        View All
+                                    </button>
+                                )}
                             </div>
+                            {achievementsLoading ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <div className="loading-spinner"></div>
+                                    <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>Loading achievements...</p>
+                                </div>
+                            ) : achievements.length > 0 ? (
+                                <div className="achievements-showcase">
+                                    {achievements.slice(0, 6).map(achievement => (
+                                        <div key={achievement.id} className="achievement-showcase-item magnetic-hover">
+                                            <div className="achievement-icon-large">
+                                                {achievement.icon}
+                                            </div>
+                                            <div className="achievement-details">
+                                                <h4>{achievement.title}</h4>
+                                                <p>{achievement.description}</p>
+                                                <span className="achievement-points">+{achievement.points} pts</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                                    <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</p>
+                                    <p>No achievements yet!</p>
+                                    <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Start solving problems to earn badges.</p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Activity Heatmap */}
+                        <div className="glass-effect profile-card heatmap-card scroll-reveal">
+                            <h3 className="card-title">Activity Overview</h3>
+                            <ActivityHeatmap />
                         </div>
 
                         <div className="glass-effect profile-card activity-card scroll-reveal">

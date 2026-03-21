@@ -29,10 +29,15 @@ const MentorDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                console.log("🔄 Fetching mentor stats...");
                 const data = await getMentorStats();
+                console.log("✅ Mentor stats received:", data);
+                console.log("📊 Student count:", data.studentStats?.length || 0);
+                console.log("📈 Stats:", data.stats);
                 setDashboardData(data);
             } catch (error) {
-                console.error("Failed to fetch mentor stats:", error);
+                console.error("❌ Failed to fetch mentor stats:", error);
+                console.error("Error details:", error.response?.data || error.message);
             } finally {
                 setLoading(false);
             }
@@ -47,13 +52,6 @@ const MentorDashboard = () => {
         exportToCSV(dashboardData.studentStats, `Student_Report_${new Date().toLocaleDateString()}.csv`);
     };
 
-    const handleCreateContest = (e) => {
-        e.preventDefault();
-        console.log('Creating contest:', newContest);
-        alert(`Contest "${newContest.title}" created successfully!`);
-        setIsContestModalOpen(false);
-    };
-
     const handleViewProfile = (username) => {
         navigate(`/profile/${username}`);
     };
@@ -64,7 +62,7 @@ const MentorDashboard = () => {
         return matchesSearch && matchesBranch;
     });
 
-    const atRiskStudents = dashboardData.studentStats.filter(s => s.status === 'Inactive' || s.solved < 5); // Adjusted threshold for demo
+    const atRiskStudents = []; // moved to Student Activity page
 
     if (loading) {
         return <div style={{ color: 'white', padding: '50px', textAlign: 'center' }}>Loading Dashboard...</div>;
@@ -81,6 +79,7 @@ const MentorDashboard = () => {
                     </div>
                     <div className="header-actions">
                         <button className="button secondary magnetic-hover" onClick={handleExport}>Export Report</button>
+                        <button className="button secondary magnetic-hover" onClick={() => navigate('/contests-management')}>Manage Contests</button>
                         <button className="button primary magnetic-hover" onClick={() => navigate('/create-context')}>Create Context</button>
                     </div>
                 </header>
@@ -148,134 +147,47 @@ const MentorDashboard = () => {
                     </section>
                 </div>
 
-                {/* Student List Table */}
-                <section className="student-table-section glass-effect">
-                    <div className="table-header">
-                        <div className="table-title">
-                            <h3>Recent Student Activity</h3>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Showing {filteredStudents.length} students</p>
-                        </div>
-                        <div className="table-actions">
-                            <input
-                                type="text"
-                                placeholder="Search students..."
-                                className="table-search"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                            <select
-                                className="branch-filter"
-                                value={branchFilter}
-                                onChange={(e) => setBranchFilter(e.target.value)}
-                            >
-                                <option value="all">All Branches</option>
-                                <option value="CSE">CSE</option>
-                                <option value="IT">IT</option>
-                                <option value="ECE">ECE</option>
-                                <option value="MECH">MECH</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className="table-container">
-                        <table className="student-table">
-                            <thead>
-                                <tr>
-                                    <th>Student Name</th>
-                                    <th>Branch</th>
-                                    <th>Solved</th>
-                                    <th>Points</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredStudents.map(student => (
-                                    <tr key={student.id}>
-                                        <td>
-                                            <div className="student-info">
-                                                <div className="student-avatar">{student.name.charAt(0)}</div>
-                                                <div className="name-box">
-                                                    <span>{student.name}</span>
-                                                    <small style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)' }}>Active {student.lastActive}</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>{student.branch}</td>
-                                        <td>{student.solved}</td>
-                                        <td>{student.points}</td>
-                                        <td>
-                                            <span className={`status-badge ${student.status.toLowerCase()}`}>
-                                                {student.status}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button
-                                                className="text-button"
-                                                onClick={() => handleViewProfile(student.username)}
-                                            >
-                                                View Profile
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredStudents.length === 0 && (
-                                    <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
-                                            {loading ? 'Loading...' : 'No students found matching your criteria.'}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+                {/* Student List Table - moved to Activity page */}
 
                 <div className="mentor-grid">
                     {/* Topic Mastery Radar */}
-                    <section className="chart-section glass-effect">
+                    <section className="chart-section glass-effect" style={{ gridColumn: '1 / -1' }}>
                         <h3>Topic-wise Class Mastery</h3>
                         <div className="chart-container" style={{ height: '350px', marginTop: '1.5rem' }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={dashboardData.topicMastery}>
-                                    <PolarGrid stroke="var(--glass-border)" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                    <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
-                                    <Radar
-                                        name="Class Avg"
-                                        dataKey="A"
-                                        stroke="var(--primary-color)"
-                                        fill="var(--primary-color)"
-                                        fillOpacity={0.6}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}
-                                    />
-                                </RadarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </section>
-
-                    {/* At-Risk Students Card */}
-                    <section className="at-risk-section glass-effect">
-                        <div className="section-header">
-                            <h3>At-Risk Students</h3>
-                            <span className="risk-count">{atRiskStudents.length} Needs Attention</span>
-                        </div>
-                        <div className="risk-list">
-                            {atRiskStudents.map(student => (
-                                <div key={student.id} className="risk-item">
-                                    <div className="risk-info">
-                                        <div className="student-avatar" style={{ background: 'rgba(244, 63, 94, 0.2)', color: '#f43f5e' }}>{student.name.charAt(0)}</div>
-                                        <div>
-                                            <p>{student.name}</p>
-                                            <small>{student.branch} • Active {student.lastActive}</small>
-                                        </div>
-                                    </div>
-                                    <div className="risk-reason">
-                                        <span className="risk-badge">{student.solved < 5 ? 'Low Activity' : 'Inactive'}</span>
-                                    </div>
+                            {dashboardData.topicMastery && dashboardData.topicMastery.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={dashboardData.topicMastery}>
+                                        <PolarGrid stroke="var(--glass-border)" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                        <PolarRadiusAxis 
+                                            angle={30} 
+                                            domain={[0, Math.max(...dashboardData.topicMastery.map(t => t.fullMark || 5))]} 
+                                            tick={{ fill: '#94a3b8', fontSize: 10 }} 
+                                            axisLine={false} 
+                                        />
+                                        <Radar
+                                            name="Class Avg"
+                                            dataKey="A"
+                                            stroke="var(--primary-color)"
+                                            fill="var(--primary-color)"
+                                            fillOpacity={0.6}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}
+                                            formatter={(value, name) => {
+                                                if (name === "Class Avg") {
+                                                    return [`${value} problems (avg per student)`, name];
+                                                }
+                                                return [value, name];
+                                            }}
+                                        />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ padding: '50px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                    No topic data available yet. Students need to start solving problems!
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </section>
                 </div>

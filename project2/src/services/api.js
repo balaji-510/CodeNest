@@ -175,6 +175,16 @@ export const verifyCodeChef = async (handle) => {
     }
 };
 
+export const verifyHackerRank = async (handle) => {
+    try {
+        const response = await api.post('/verify-hackerrank/', { handle });
+        return response.data;
+    } catch (error) {
+        console.error("Error verifying HackerRank:", error);
+        throw error;
+    }
+};
+
 export const executeCode = async (language, code, stdin = "") => {
     try {
         const response = await api.post('/execute-code/', { language, code, stdin });
@@ -187,10 +197,16 @@ export const executeCode = async (language, code, stdin = "") => {
 
 export const getMentorStats = async () => {
     try {
+        console.log("📡 Calling /mentor-stats/ API...");
         const response = await api.get('/mentor-stats/');
+        console.log("✅ API Response:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Error fetching mentor stats:", error);
+        console.error("❌ Error fetching mentor stats:", error);
+        if (error.response) {
+            console.error("Response status:", error.response.status);
+            console.error("Response data:", error.response.data);
+        }
         throw error;
     }
 };
@@ -247,11 +263,11 @@ export const getRoadmap = async () => {
 
 export const submitCode = async (problemId, language, code) => {
     try {
-        // Ideally we run against test cases here or on backend.
-        // For this prototype, we will just mark as Solved if they submit.
-        const response = await api.post('/submissions/', {
-            problem: problemId,
-            status: "Solved"
+        // Submit code with test case validation
+        const response = await api.post('/submissions/submit_solution/', {
+            problem_id: problemId,
+            language: language,
+            code: code
         });
         return response.data;
     } catch (error) {
@@ -261,3 +277,34 @@ export const submitCode = async (problemId, language, code) => {
 };
 
 export default api;
+
+
+// Platform Stats API
+export const getPlatformStats = async () => {
+    try {
+        const response = await api.get('/platform-stats/');
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch platform stats:", error);
+        // Return default values if API fails
+        return {
+            total_problems_solved: 0,
+            active_users: 0,
+            total_users: 0,
+            total_problems: 0,
+            platform_accuracy: 0,
+            success_rate: 0
+        };
+    }
+};
+
+// Analytics API
+export const getAnalytics = async () => {
+    try {
+        const response = await api.get('/analytics/');
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch analytics:", error);
+        throw error;
+    }
+};

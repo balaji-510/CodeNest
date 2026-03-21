@@ -29,6 +29,20 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = UserSerializer
 
+    def create(self, request, *args, **kwargs):
+        from django.core.cache import cache
+        email = request.data.get('email', '').strip().lower()
+        verified = cache.get(f"otp_verified_{email}")
+        if not verified:
+            return Response(
+                {"error": "Email not verified. Please complete OTP verification first."},
+                status=400
+            )
+        response = super().create(request, *args, **kwargs)
+        # Clear the verified flag after successful registration
+        cache.delete(f"otp_verified_{email}")
+        return response
+
 class ProblemViewSet(viewsets.ModelViewSet):
     queryset = Problem.objects.all()
     serializer_class = ProblemSerializer
@@ -56,12 +70,25 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset.select_related('user', 'problem')
         user = self.request.query_params.get('user')
+        problem = self.request.query_params.get('problem')
         if user:
-            return queryset.filter(user_id=user)
-        return queryset
+            queryset = queryset.filter(user_id=user)
+        if problem:
+            queryset = queryset.filter(problem_id=problem)
+        return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def solved_problems(self, request):
+        """Return list of problem IDs the current user has accepted submissions for."""
+        user_id = request.query_params.get('user', request.user.id)
+        solved_ids = Submission.objects.filter(
+            user_id=user_id,
+            status='ACCEPTED'
+        ).values_list('problem_id', flat=True).distinct()
+        return Response(list(solved_ids))
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def submit_solution(self, request):
@@ -219,12 +246,39 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         
         # Update user stats if newly accepted
         if submission_status == 'ACCEPTED' and not already_accepted:
-            from django.db.models import F
-            UserStats.objects.get_or_create(user=request.user)
-            UserStats.objects.filter(user=request.user).update(
-                score=F('score') + 10,
-                problems_solved=F('problems_solved') + 1
+            from django.db.models import Sum
+            # Sum points of all uniquely solved problems (source of truth)
+            new_problems_solved = Submission.objects.filter(
+                user=request.user,
+                status='ACCEPTED'
+            ).values('problem').distinct().count()
+
+            new_score = (
+                Submission.objects.filter(user=request.user, status='ACCEPTED')
+                .values('problem')
+                .distinct()
+                .aggregate(total=Sum('problem__points'))['total'] or 0
             )
+
+            user_stats_obj, _ = UserStats.objects.get_or_create(user=request.user)
+            user_stats_obj.problems_solved = new_problems_solved
+            user_stats_obj.score = new_score
+            user_stats_obj.save()
+            
+            # Update TopicProgress for the problem's topic
+            topic = problem.topic
+            topic_progress, created = TopicProgress.objects.get_or_create(
+                user=request.user,
+                topic=topic,
+                defaults={
+                    'solved_count': 0,
+                    'total_problems': Problem.objects.filter(topic=topic).count()
+                }
+            )
+            # Increment solved count
+            topic_progress.solved_count = F('solved_count') + 1
+            topic_progress.total_problems = Problem.objects.filter(topic=topic).count()
+            topic_progress.save()
             
             # Update analytics
             from django.utils import timezone
@@ -236,6 +290,23 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             if not created:
                 analytics.problems_solved = F('problems_solved') + 1
                 analytics.save()
+            
+            # Update profile stats (accuracy, rank, active days)
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            
+            # Calculate accuracy
+            total_subs = Submission.objects.filter(user=request.user).count()
+            accepted_subs = Submission.objects.filter(user=request.user, status='ACCEPTED').count()
+            profile.accuracy = round((accepted_subs / total_subs * 100), 1) if total_subs > 0 else 0
+            
+            # Calculate active days
+            submission_dates = Submission.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct()
+            profile.active_days = len(set(submission_dates))
+            
+            # Calculate rank
+            profile.rank = UserStats.objects.filter(score__gt=user_stats_obj.score).count() + 1
+            
+            profile.save()
             
             # Check and award achievements
             from .services.achievement_service import AchievementService
@@ -255,6 +326,26 @@ class SubmissionViewSet(viewsets.ModelViewSet):
                     })
         else:
             newly_earned_data = []
+            
+            # Still update analytics for failed submissions (to track activity)
+            from django.utils import timezone
+            analytics, created = Analytics.objects.get_or_create(
+                user=request.user,
+                date=timezone.now().date(),
+                defaults={'problems_solved': 0}
+            )
+            
+            # Update profile accuracy even for failed submissions
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            total_subs = Submission.objects.filter(user=request.user).count()
+            accepted_subs = Submission.objects.filter(user=request.user, status='ACCEPTED').count()
+            profile.accuracy = round((accepted_subs / total_subs * 100), 1) if total_subs > 0 else 0
+            
+            # Update active days
+            submission_dates = Submission.objects.filter(user=request.user).values_list('created_at__date', flat=True).distinct()
+            profile.active_days = len(set(submission_dates))
+            
+            profile.save()
         
         # Return response
         return Response({
@@ -361,13 +452,23 @@ def _get_user_dashboard_stats_data(user):
     
     # Calculate actual problems solved (distinct accepted submissions)
     problems_solved = Submission.objects.filter(
-        user=user, 
+        user=user,
         status='ACCEPTED'
     ).values('problem').distinct().count()
-    
-    # Update UserStats if needed
-    if user_stats.problems_solved != problems_solved:
+
+    # Recalculate score: sum points of each uniquely solved problem
+    from django.db.models import Sum
+    correct_score = (
+        Submission.objects.filter(user=user, status='ACCEPTED')
+        .values('problem')
+        .distinct()
+        .aggregate(total=Sum('problem__points'))['total'] or 0
+    )
+
+    # Update UserStats if out of sync
+    if user_stats.problems_solved != problems_solved or user_stats.score != correct_score:
         user_stats.problems_solved = problems_solved
+        user_stats.score = correct_score
         user_stats.save()
     
     # Get topic progress
@@ -416,6 +517,8 @@ def _get_user_dashboard_stats_data(user):
         "is_codechef_verified": profile.is_codechef_verified,
         "codeforces_handle": profile.codeforces_handle,
         "is_codeforces_verified": profile.is_codeforces_verified,
+        "hackerrank_handle": profile.hackerrank_handle,
+        "is_hackerrank_verified": profile.is_hackerrank_verified,
         
         # Real problems solved count
         "problemsSolved": problems_solved,
@@ -526,7 +629,8 @@ def get_verification_token(request):
         "token": profile.verification_token, 
         "leetcode_verified": profile.is_leetcode_verified,
         "codechef_verified": profile.is_codechef_verified,
-        "codeforces_verified": profile.is_codeforces_verified
+        "codeforces_verified": profile.is_codeforces_verified,
+        "hackerrank_verified": profile.is_hackerrank_verified,
     })
 
 @api_view(['GET'])
@@ -988,8 +1092,8 @@ def get_mentor_stats(request):
         # 7. Student List
         student_list = []
         for s in students:
-            # Calculate solved count
-            solved = Submission.objects.filter(user=s.user, status='ACCEPTED').count()
+            # Calculate solved count (unique problems)
+            solved = Submission.objects.filter(user=s.user, status='ACCEPTED').values('problem').distinct().count()
             
             # Get actual points from UserStats
             user_stats = getattr(s.user, 'stats', None)
@@ -1020,28 +1124,52 @@ def get_mentor_stats(request):
                 "lastActive": last_active
             })
 
-        # 8. Topic Mastery (Aggregate) - Real Data
-        from django.db.models import Avg
-        topic_progress_data = TopicProgress.objects.values('topic').annotate(
-            avg_solved=Avg('solved_count'),
-            avg_total=Avg('total_problems')
-        )
+        # 8. Topic Mastery (Aggregate) - Calculate from actual problem data
+        from django.db.models import Count, Q
+        
+        # Get all problems grouped by topic
+        problem_topics = Problem.objects.values('topic').annotate(
+            total_problems=Count('id')
+        ).filter(total_problems__gt=0).order_by('-total_problems')
         
         topic_mastery = []
-        for tp in topic_progress_data:
-            if tp['avg_total'] and tp['avg_total'] > 0:
-                topic_mastery.append({
-                    "subject": tp['topic'],
-                    "A": round(tp['avg_solved'] or 0, 1),
-                    "B": round((tp['avg_total'] or 0) * 0.6, 1),  # 60% as target
-                    "fullMark": round(tp['avg_total'] or 0, 1)
-                })
+        for pt in problem_topics:
+            topic = pt['topic']
+            total_problems = pt['total_problems']
+            
+            # Count total ACCEPTED submissions in this topic (across all students)
+            total_solved = Submission.objects.filter(
+                problem__topic=topic,
+                status='ACCEPTED'
+            ).values('problem').distinct().count()
+            
+            # Calculate average problems solved per student in this topic
+            # This gives us: how many problems on average each student solved in this topic
+            if total_students > 0:
+                # Count unique problem-user combinations
+                unique_solves = Submission.objects.filter(
+                    problem__topic=topic,
+                    status='ACCEPTED'
+                ).values('user', 'problem').distinct().count()
+                
+                avg_solved_per_student = unique_solves / total_students
+            else:
+                avg_solved_per_student = 0
+            
+            topic_mastery.append({
+                "subject": topic,
+                "A": round(avg_solved_per_student, 1),  # Average problems solved per student
+                "fullMark": total_problems  # Total problems available in topic
+            })
         
-        # If no topic data, show default topics with zeros
+        # Limit to top 5 topics for better visualization
+        topic_mastery = topic_mastery[:5]
+        
+        # If no topic data, show default topics with sample data
         if not topic_mastery:
             default_topics = ["Arrays", "Strings", "Dynamic Programming", "Trees", "Graphs"]
             topic_mastery = [
-                {"subject": t, "A": 0, "B": 0, "fullMark": 100}
+                {"subject": t, "A": 0, "fullMark": 100}
                 for t in default_topics
             ]
 
@@ -1391,104 +1519,429 @@ def platform_stats(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def leetcode_stats_proxy(request):
+    """Proxy LeetCode GraphQL API to avoid CORS issues in the browser"""
+    import requests as req
+
+    username = request.query_params.get('username')
+    if not username:
+        return Response({'error': 'username is required'}, status=400)
+
+    # Combined query: profile stats + contest ranking
+    query = """
+    query getUserData($username: String!) {
+        matchedUser(username: $username) {
+            username
+            profile {
+                ranking
+            }
+            submitStats {
+                acSubmissionNum {
+                    difficulty
+                    count
+                }
+            }
+        }
+        userContestRanking(username: $username) {
+            attendedContestsCount
+            rating
+            globalRanking
+            topPercentage
+        }
+    }
+    """
+
+    try:
+        response = req.post(
+            'https://leetcode.com/graphql',
+            json={'query': query, 'variables': {'username': username}},
+            headers={
+                'Content-Type': 'application/json',
+                'Referer': 'https://leetcode.com',
+                'User-Agent': 'Mozilla/5.0',
+            },
+            timeout=10
+        )
+        data = response.json()
+
+        if 'errors' in data or not data.get('data', {}).get('matchedUser'):
+            return Response({'error': 'LeetCode user not found'}, status=404)
+
+        matched = data['data']['matchedUser']
+        contest = data['data'].get('userContestRanking') or {}
+        submit_stats = matched.get('submitStats', {}).get('acSubmissionNum', [])
+
+        total_solved = easy = medium = hard = 0
+        for s in submit_stats:
+            if s['difficulty'] == 'All':
+                total_solved = s['count']
+            elif s['difficulty'] == 'Easy':
+                easy = s['count']
+            elif s['difficulty'] == 'Medium':
+                medium = s['count']
+            elif s['difficulty'] == 'Hard':
+                hard = s['count']
+
+        return Response({
+            'platform': 'LeetCode',
+            'totalSolved': total_solved,
+            'easySolved': easy,
+            'mediumSolved': medium,
+            'hardSolved': hard,
+            'ranking': matched.get('profile', {}).get('ranking', 0),
+            'acceptanceRate': round((total_solved / (total_solved + 100)) * 100) if total_solved > 0 else 0,
+            'contestRating': round(contest.get('rating', 0)) if contest.get('rating') else 0,
+            'contestGlobalRanking': contest.get('globalRanking', 0),
+            'contestsAttended': contest.get('attendedContestsCount', 0),
+            'topPercentage': round(contest.get('topPercentage', 0), 2) if contest.get('topPercentage') else 0,
+        })
+
+    except req.exceptions.Timeout:
+        return Response({'error': 'LeetCode API timed out'}, status=504)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def codechef_stats_proxy(request):
+    """Scrape CodeChef profile page server-side to avoid CORS issues"""
+    import requests as req
+    import re
+
+    username = request.query_params.get('username')
+    if not username:
+        return Response({'error': 'username is required'}, status=400)
+
+    try:
+        response = req.get(
+            f'https://www.codechef.com/users/{username}',
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+            },
+            timeout=10
+        )
+
+        if response.status_code == 404:
+            return Response({'error': 'CodeChef user not found'}, status=404)
+        if response.status_code != 200:
+            return Response({'error': f'CodeChef returned {response.status_code}'}, status=502)
+
+        html = response.text
+
+        # Current rating
+        rating_match = re.search(r'<div class="rating-number">(\d+)</div>', html)
+        current_rating = int(rating_match.group(1)) if rating_match else 0
+
+        # Stars — count ★ symbols inside rating-star div
+        stars_match = re.search(r'<div class="rating-star">(.*?)</div>', html, re.DOTALL)
+        stars_count = stars_match.group(1).count('&#9733;') if stars_match else 0
+        stars_str = '★' * stars_count if stars_count else 'Unrated'
+
+        # Global rank
+        rank_match = re.search(r"<strong class='global-rank'>([^<]+)</strong>", html)
+        global_rank = rank_match.group(1).strip() if rank_match else 'N/A'
+
+        # Country rank
+        country_rank_match = re.search(r"<strong class='country-rank'>([^<]+)</strong>", html)
+        country_rank = country_rank_match.group(1).strip() if country_rank_match else 'N/A'
+
+        # Highest rating
+        highest_match = re.search(r'highest_rating["\s:]+(\d+)', html)
+        highest_rating = int(highest_match.group(1)) if highest_match else current_rating
+
+        # Contests participated — from the contest-participated-count div
+        contests_match = re.search(
+            r'contest-participated-count">\s*No\. of Contests Participated:\s*<b>(\d+)',
+            html
+        )
+        contests = int(contests_match.group(1)) if contests_match else 0
+
+        # Total problems solved — from "Total Problems Solved: N" h3 inside problems section
+        total_solved_match = re.search(r'Total Problems Solved:\s*(\d+)', html)
+        fully_solved = int(total_solved_match.group(1)) if total_solved_match else 0
+
+        # If not found, count individual problem spans in the problems-solved section
+        if fully_solved == 0:
+            ps_idx = html.find('rating-data-section problems-solved')
+            if ps_idx > 0:
+                section = html[ps_idx:ps_idx + 100000]
+                end_idx = section.find('rating-data-section', 20)
+                if end_idx > 0:
+                    section = section[:end_idx]
+                problems = re.findall(r'font-size: 12px["\s;]+>([^<]+)</span>', section)
+                fully_solved = len(problems)
+
+        return Response({
+            'platform': 'CodeChef',
+            'currentRating': current_rating,
+            'highestRating': highest_rating,
+            'stars': stars_str,
+            'globalRank': global_rank,
+            'countryRank': country_rank,
+            'totalSolved': fully_solved,
+            'contestsParticipated': contests,
+        })
+
+    except req.exceptions.Timeout:
+        return Response({'error': 'CodeChef request timed out'}, status=504)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_analytics(request):
-    """Get detailed analytics data for the authenticated user"""
-    from django.db.models import Count
+    """Get detailed analytics data - for teachers shows class stats, for students shows personal stats"""
+    from django.db.models import Count, Sum, Avg
     from django.utils import timezone
     import datetime
     
     user = request.user
     
-    # Get user stats
-    user_stats, _ = UserStats.objects.get_or_create(user=user)
+    # Check if user is a teacher
+    is_teacher = hasattr(user, 'profile') and user.profile.role == 'teacher'
     
-    # Calculate total solved (distinct accepted submissions)
-    total_solved = Submission.objects.filter(
-        user=user, 
-        status='ACCEPTED'
-    ).values('problem').distinct().count()
-    
-    # Calculate acceptance rate
-    total_submissions = Submission.objects.filter(user=user).count()
-    accepted_submissions = Submission.objects.filter(user=user, status='ACCEPTED').count()
-    acceptance_rate = round((accepted_submissions / total_submissions * 100), 1) if total_submissions > 0 else 0
-    
-    # Calculate global rank (based on score)
-    global_rank = UserStats.objects.filter(score__gt=user_stats.score).count() + 1
-    
-    # Get submission data for the last 7 days
-    today = timezone.now().date()
-    submission_data = []
-    for i in range(6, -1, -1):
-        date = today - datetime.timedelta(days=i)
-        day_name = date.strftime("%a")
-        count = Submission.objects.filter(user=user, created_at__date=date).count()
-        submission_data.append({"day": day_name, "count": count})
-    
-    # Get topic breakdown from TopicProgress
-    topic_progress = TopicProgress.objects.filter(user=user)
-    topic_data = []
-    topic_breakdown = []
-    
-    for tp in topic_progress:
-        topic_data.append({
-            "name": tp.topic,
-            "solved": tp.solved_count,
-            "total": tp.total_problems
+    if is_teacher:
+        # TEACHER VIEW: Show class-wide statistics
+        students = UserProfile.objects.filter(role='student')
+        total_students = students.count()
+        
+        # Calculate total problems solved by all students
+        total_solved = Submission.objects.filter(
+            user__profile__role='student',
+            status='ACCEPTED'
+        ).values('problem', 'user').distinct().count()
+        
+        # Calculate class-wide acceptance rate
+        total_submissions = Submission.objects.filter(user__profile__role='student').count()
+        accepted_submissions = Submission.objects.filter(user__profile__role='student', status='ACCEPTED').count()
+        acceptance_rate = round((accepted_submissions / total_submissions * 100), 1) if total_submissions > 0 else 0
+        
+        # Calculate total points across all students
+        total_points = UserStats.objects.filter(user__profile__role='student').aggregate(Sum('score'))['score__sum'] or 0
+        
+        # Get submission data for the last 7 days (all students)
+        today = timezone.now().date()
+        submission_data = []
+        for i in range(6, -1, -1):
+            date = today - datetime.timedelta(days=i)
+            day_name = date.strftime("%a")
+            count = Submission.objects.filter(
+                user__profile__role='student',
+                created_at__date=date
+            ).count()
+            submission_data.append({"day": day_name, "count": count})
+        
+        # Get topic breakdown (aggregated across all students)
+        problem_topics = Problem.objects.values('topic').annotate(
+            total_problems=Count('id')
+        ).filter(total_problems__gt=0).order_by('-total_problems')
+        
+        topic_data = []
+        topic_breakdown = []
+        
+        for pt in problem_topics:
+            topic = pt['topic']
+            total_problems = pt['total_problems']
+            
+            # Count unique student-problem combinations for this topic
+            solved_count = Submission.objects.filter(
+                user__profile__role='student',
+                problem__topic=topic,
+                status='ACCEPTED'
+            ).values('user', 'problem').distinct().count()
+            
+            # Average solved per student
+            avg_solved = solved_count / total_students if total_students > 0 else 0
+            
+            topic_data.append({
+                "name": topic,
+                "solved": round(avg_solved, 1),
+                "total": total_problems
+            })
+            
+            # Calculate color based on progress
+            progress_pct = (avg_solved / total_problems * 100) if total_problems > 0 else 0
+            if progress_pct >= 80:
+                color = "#38bdf8"
+            elif progress_pct >= 60:
+                color = "#818cf8"
+            elif progress_pct >= 40:
+                color = "#c084fc"
+            elif progress_pct >= 20:
+                color = "#f472b6"
+            else:
+                color = "#fb7185"
+            
+            topic_breakdown.append({
+                "topic": topic,
+                "solved": round(avg_solved, 1),
+                "total": total_problems,
+                "color": color
+            })
+        
+        # Get submission stats over time (last 6 months) - all students
+        submission_stats = []
+        for i in range(5, -1, -1):
+            month_date = today - datetime.timedelta(days=i*30)
+            month_name = month_date.strftime("%b")
+            
+            # Count submissions in that month
+            start_date = month_date.replace(day=1)
+            if i == 0:
+                end_date = today
+            else:
+                next_month = start_date + datetime.timedelta(days=32)
+                end_date = next_month.replace(day=1) - datetime.timedelta(days=1)
+            
+            count = Submission.objects.filter(
+                user__profile__role='student',
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date
+            ).count()
+            
+            submission_stats.append({"month": month_name, "count": count})
+        
+        # Add topic mastery for radar chart (class-wide average)
+        topic_mastery = []
+        for pt in problem_topics:
+            topic = pt['topic']
+            total_problems = pt['total_problems']
+            
+            # Count unique student-problem combinations for this topic
+            solved_count = Submission.objects.filter(
+                user__profile__role='student',
+                problem__topic=topic,
+                status='ACCEPTED'
+            ).values('user', 'problem').distinct().count()
+            
+            # Average solved per student
+            avg_solved = solved_count / total_students if total_students > 0 else 0
+            
+            topic_mastery.append({
+                "subject": topic,
+                "A": round(avg_solved, 1),  # Average solved per student
+                "fullMark": total_problems  # Total available
+            })
+        
+        return Response({
+            "isTeacher": True,
+            "totalStudents": total_students,
+            "totalSolved": total_solved,
+            "acceptanceRate": f"{acceptance_rate}%",
+            "globalRank": 1,  # Not applicable for teachers
+            "points": total_points,
+            "submissionData": submission_data,
+            "topicData": topic_data,
+            "topicBreakdown": topic_breakdown,
+            "topicMastery": topic_mastery,
+            "submissionStats": submission_stats
         })
+    
+    else:
+        # STUDENT VIEW: Show personal statistics
+        # Get user stats
+        user_stats, _ = UserStats.objects.get_or_create(user=user)
         
-        # Calculate color based on progress
-        progress_pct = (tp.solved_count / tp.total_problems * 100) if tp.total_problems > 0 else 0
-        if progress_pct >= 80:
-            color = "#38bdf8"
-        elif progress_pct >= 60:
-            color = "#818cf8"
-        elif progress_pct >= 40:
-            color = "#c084fc"
-        elif progress_pct >= 20:
-            color = "#f472b6"
-        else:
-            color = "#fb7185"
+        # Calculate total solved (distinct accepted submissions)
+        total_solved = Submission.objects.filter(
+            user=user, 
+            status='ACCEPTED'
+        ).values('problem').distinct().count()
         
-        topic_breakdown.append({
-            "topic": tp.topic,
-            "solved": tp.solved_count,
-            "total": tp.total_problems,
-            "color": color
+        # Calculate acceptance rate
+        total_submissions = Submission.objects.filter(user=user).count()
+        accepted_submissions = Submission.objects.filter(user=user, status='ACCEPTED').count()
+        acceptance_rate = round((accepted_submissions / total_submissions * 100), 1) if total_submissions > 0 else 0
+        
+        # Calculate global rank (based on score)
+        global_rank = UserStats.objects.filter(score__gt=user_stats.score).count() + 1
+        
+        # Get submission data for the last 7 days
+        today = timezone.now().date()
+        submission_data = []
+        for i in range(6, -1, -1):
+            date = today - datetime.timedelta(days=i)
+            day_name = date.strftime("%a")
+            count = Submission.objects.filter(user=user, created_at__date=date).count()
+            submission_data.append({"day": day_name, "count": count})
+        
+        # Get topic breakdown from TopicProgress
+        topic_progress = TopicProgress.objects.filter(user=user)
+        topic_data = []
+        topic_breakdown = []
+        topic_mastery = []
+        
+        for tp in topic_progress:
+            topic_data.append({
+                "name": tp.topic,
+                "solved": tp.solved_count,
+                "total": tp.total_problems
+            })
+            
+            # Calculate color based on progress
+            progress_pct = (tp.solved_count / tp.total_problems * 100) if tp.total_problems > 0 else 0
+            if progress_pct >= 80:
+                color = "#38bdf8"
+            elif progress_pct >= 60:
+                color = "#818cf8"
+            elif progress_pct >= 40:
+                color = "#c084fc"
+            elif progress_pct >= 20:
+                color = "#f472b6"
+            else:
+                color = "#fb7185"
+            
+            topic_breakdown.append({
+                "topic": tp.topic,
+                "solved": tp.solved_count,
+                "total": tp.total_problems,
+                "color": color
+            })
+            
+            # For radar chart
+            topic_mastery.append({
+                "subject": tp.topic,
+                "A": tp.solved_count,  # Your solved count
+                "fullMark": tp.total_problems  # Total available
+            })
+        
+        # Get submission stats over time (last 6 months)
+        submission_stats = []
+        for i in range(5, -1, -1):
+            month_date = today - datetime.timedelta(days=i*30)
+            month_name = month_date.strftime("%b")
+            
+            # Count submissions in that month
+            start_date = month_date.replace(day=1)
+            if i == 0:
+                end_date = today
+            else:
+                next_month = start_date + datetime.timedelta(days=32)
+                end_date = next_month.replace(day=1) - datetime.timedelta(days=1)
+            
+            count = Submission.objects.filter(
+                user=user,
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date
+            ).count()
+            
+            submission_stats.append({"month": month_name, "count": count})
+        
+        return Response({
+            "isTeacher": False,
+            "totalSolved": total_solved,
+            "acceptanceRate": f"{acceptance_rate}%",
+            "globalRank": global_rank,
+            "points": user_stats.score,
+            "submissionData": submission_data,
+            "topicData": topic_data,
+            "topicBreakdown": topic_breakdown,
+            "topicMastery": topic_mastery,
+            "submissionStats": submission_stats
         })
-    
-    # Get submission stats over time (last 6 months)
-    submission_stats = []
-    for i in range(5, -1, -1):
-        month_date = today - datetime.timedelta(days=i*30)
-        month_name = month_date.strftime("%b")
-        
-        # Count submissions in that month
-        start_date = month_date.replace(day=1)
-        if i == 0:
-            end_date = today
-        else:
-            next_month = start_date + datetime.timedelta(days=32)
-            end_date = next_month.replace(day=1) - datetime.timedelta(days=1)
-        
-        count = Submission.objects.filter(
-            user=user,
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date
-        ).count()
-        
-        submission_stats.append({"month": month_name, "count": count})
-    
-    return Response({
-        "totalSolved": total_solved,
-        "acceptanceRate": f"{acceptance_rate}%",
-        "globalRank": global_rank,
-        "points": user_stats.score,
-        "submissionData": submission_data,
-        "topicData": topic_data,
-        "topicBreakdown": topic_breakdown,
-        "submissionStats": submission_stats
-    })
 
 
 @api_view(['GET'])
@@ -2123,3 +2576,391 @@ I can assist you with:
 What would you like help with?"""
 
 
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def hackerrank_stats_proxy(request):
+    """Fetch HackerRank public profile stats server-side to avoid CORS."""
+    import requests as req
+    import re
+
+    username = request.query_params.get('username')
+    if not username:
+        return Response({'error': 'username is required'}, status=400)
+
+    try:
+        # HackerRank public profile API
+        response = req.get(
+            f'https://www.hackerrank.com/rest/hackers/{username}/scores_elo',
+            headers={'User-Agent': 'Mozilla/5.0'},
+            timeout=10
+        )
+        if response.status_code == 404:
+            return Response({'error': 'HackerRank user not found'}, status=404)
+
+        scores_data = response.json() if response.status_code == 200 else {}
+
+        # Also fetch profile page for badges/stars
+        profile_resp = req.get(
+            f'https://www.hackerrank.com/rest/hackers/{username}/profile',
+            headers={'User-Agent': 'Mozilla/5.0'},
+            timeout=10
+        )
+        profile_data = {}
+        if profile_resp.status_code == 200:
+            profile_data = profile_resp.json().get('model', {})
+
+        # Extract scores per track
+        tracks = []
+        total_score = 0
+        if isinstance(scores_data, list):
+            for item in scores_data:
+                track = item.get('track', '')
+                score = item.get('score', 0)
+                total_score += score
+                tracks.append({'track': track, 'score': score})
+        elif isinstance(scores_data, dict):
+            for track, score in scores_data.items():
+                total_score += score if isinstance(score, (int, float)) else 0
+                tracks.append({'track': track, 'score': score})
+
+        return Response({
+            'platform': 'HackerRank',
+            'username': username,
+            'totalScore': total_score,
+            'tracks': tracks,
+            'stars': profile_data.get('stars', 0),
+            'level': profile_data.get('level', 0),
+            'country': profile_data.get('country', ''),
+            'badges': profile_data.get('badges_count', 0),
+        })
+
+    except req.exceptions.Timeout:
+        return Response({'error': 'HackerRank request timed out'}, status=504)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_hackerrank_account(request):
+    """
+    Verify HackerRank account by checking the user's 'About' section for the verification token.
+    HackerRank profile About: https://www.hackerrank.com/rest/hackers/<handle>/profile
+    """
+    import requests as req
+
+    handle = request.data.get('handle')
+    if not handle:
+        return Response({'error': 'Handle is required'}, status=400)
+
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    token = profile.verification_token
+    if not token:
+        return Response({'error': 'No verification token found'}, status=400)
+
+    try:
+        response = req.get(
+            f'https://www.hackerrank.com/rest/hackers/{handle}/profile',
+            headers={'User-Agent': 'Mozilla/5.0'},
+            timeout=10
+        )
+        if response.status_code == 404:
+            return Response({'error': 'HackerRank user not found'}, status=404)
+        if response.status_code != 200:
+            return Response({'error': f'HackerRank returned {response.status_code}'}, status=502)
+
+        data = response.json().get('model', {})
+        about = data.get('about', '') or ''
+
+        if token in about:
+            profile.hackerrank_handle = handle
+            profile.is_hackerrank_verified = True
+            profile.save()
+            return Response({'success': True, 'message': 'HackerRank account verified!'})
+        else:
+            return Response({
+                'success': False,
+                'error': f"Token '{token}' not found in HackerRank About section. Please add it and try again."
+            }, status=400)
+
+    except req.exceptions.RequestException as e:
+        return Response({'error': f'Network error: {str(e)}'}, status=503)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def send_otp(request):
+    """
+    Send a 6-digit OTP to the provided email for signup verification.
+    POST { "email": "user@example.com" }
+    """
+    import random
+    from django.core.cache import cache
+    from django.core.mail import send_mail
+    from django.contrib.auth.models import User
+
+    email = request.data.get('email', '').strip().lower()
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+
+    # Check if email already registered
+    if User.objects.filter(email__iexact=email).exists():
+        return Response({"error": "An account with this email already exists."}, status=400)
+
+    otp = str(random.randint(100000, 999999))
+    cache_key = f"otp_{email}"
+    cache.set(cache_key, otp, timeout=600)  # 10 minutes
+
+    subject = "Your CodeNest Verification Code"
+    message = (
+        f"Hi,\n\n"
+        f"Your CodeNest email verification code is:\n\n"
+        f"  {otp}\n\n"
+        f"This code expires in 10 minutes. Do not share it with anyone.\n\n"
+        f"— The CodeNest Team"
+    )
+
+    try:
+        send_mail(subject, message, None, [email], fail_silently=False)
+    except Exception as e:
+        logger.error(f"Failed to send OTP email to {email}: {e}")
+        return Response({"error": "Failed to send email. Please try again."}, status=500)
+
+    return Response({"message": "OTP sent successfully."})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_otp(request):
+    """
+    Verify the OTP entered by the user.
+    POST { "email": "user@example.com", "otp": "123456" }
+    Returns { "verified": true } on success.
+    """
+    from django.core.cache import cache
+
+    email = request.data.get('email', '').strip().lower()
+    otp_input = request.data.get('otp', '').strip()
+
+    if not email or not otp_input:
+        return Response({"error": "Email and OTP are required"}, status=400)
+
+    cache_key = f"otp_{email}"
+    stored_otp = cache.get(cache_key)
+
+    if stored_otp is None:
+        return Response({"error": "OTP expired or not found. Please request a new one."}, status=400)
+
+    if stored_otp != otp_input:
+        return Response({"error": "Invalid OTP. Please try again."}, status=400)
+
+    # Mark email as verified in cache so registration can proceed
+    cache.delete(cache_key)
+    cache.set(f"otp_verified_{email}", True, timeout=600)
+
+    return Response({"verified": True})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def scoreboard_data(request):
+    """
+    Returns all students with their CoderNest stats + platform handles.
+    Platform stats (LeetCode, CodeChef, Codeforces) are fetched live on the frontend.
+    Composite score formula:
+      CoderNest:   direct from UserStats.score
+      LeetCode:    easy*5 + medium*10 + hard*20 + floor(rating/100)*5
+      CodeChef:    problems_solved*8 + floor(rating/100)*6
+      Codeforces:  problems_solved*8 + floor(rating/100)*7
+      Total = sum of all platform scores
+    """
+    if not (hasattr(request.user, 'profile') and request.user.profile.role == 'teacher'):
+        return Response({'error': 'Only teachers can access scoreboard'}, status=403)
+
+    students = (
+        UserProfile.objects
+        .filter(role='student')
+        .select_related('user', 'user__stats')
+    )
+
+    result = []
+    for profile in students:
+        user = profile.user
+        stats = getattr(user, 'stats', None)
+
+        # CoderNest stats
+        codenest_score = stats.score if stats else 0
+        codenest_solved = stats.problems_solved if stats else 0
+
+        # Difficulty breakdown on CoderNest
+        from django.db.models import Count
+        diff_qs = (
+            Submission.objects
+            .filter(user=user, status='ACCEPTED')
+            .values('problem__difficulty')
+            .annotate(cnt=Count('problem', distinct=True))
+        )
+        diff_map = {row['problem__difficulty']: row['cnt'] for row in diff_qs}
+
+        result.append({
+            'id': user.id,
+            'username': user.username,
+            'name': (f"{user.first_name} {user.last_name}".strip()) or user.username,
+            'branch': profile.branch,
+            'batch': profile.batch,
+            'avatar': profile.avatar,
+            # CoderNest
+            'codenest': {
+                'score': codenest_score,
+                'solved': codenest_solved,
+                'easy': diff_map.get('Easy', 0),
+                'medium': diff_map.get('Medium', 0),
+                'hard': diff_map.get('Hard', 0),
+            },
+            # Platform handles (frontend fetches live stats using these)
+            'leetcode_handle': profile.leetcode_handle or '',
+            'leetcode_verified': profile.is_leetcode_verified,
+            'codechef_handle': profile.codechef_handle or '',
+            'codechef_verified': profile.is_codechef_verified,
+            'codeforces_handle': profile.codeforces_handle or '',
+            'codeforces_verified': profile.is_codeforces_verified,
+            'hackerrank_handle': profile.hackerrank_handle or '',
+            'hackerrank_verified': profile.is_hackerrank_verified,
+        })
+
+    return Response(result)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_activity(request):
+    """
+    Returns all students with their last CoderNest submission time.
+    Inactivity is determined on the frontend (combining CoderNest + platform data).
+    CoderNest last_submission is returned here; platform last-activity is checked client-side.
+    """
+    if not (hasattr(request.user, 'profile') and request.user.profile.role == 'teacher'):
+        return Response({'error': 'Only teachers can access student activity'}, status=403)
+
+    from django.utils import timezone as tz
+    from django.db.models import Max
+
+    students = (
+        UserProfile.objects
+        .filter(role='student')
+        .select_related('user', 'user__stats')
+    )
+
+    now = tz.now()
+    result = []
+    for profile in students:
+        user = profile.user
+        stats = getattr(user, 'stats', None)
+
+        last_sub = (
+            Submission.objects
+            .filter(user=user)
+            .order_by('-created_at')
+            .values_list('created_at', flat=True)
+            .first()
+        )
+
+        hours_since = None
+        if last_sub:
+            delta = now - last_sub
+            hours_since = round(delta.total_seconds() / 3600, 1)
+
+        result.append({
+            'id': user.id,
+            'username': user.username,
+            'name': (f"{user.first_name} {user.last_name}".strip()) or user.username,
+            'branch': profile.branch,
+            'batch': profile.batch,
+            'avatar': profile.avatar,
+            'codenest_solved': stats.problems_solved if stats else 0,
+            'codenest_score': stats.score if stats else 0,
+            'last_codenest_submission': last_sub.isoformat() if last_sub else None,
+            'hours_since_codenest': hours_since,
+            # Platform handles for frontend to check live activity
+            'leetcode_handle': profile.leetcode_handle or '',
+            'leetcode_verified': profile.is_leetcode_verified,
+            'codechef_handle': profile.codechef_handle or '',
+            'codechef_verified': profile.is_codechef_verified,
+            'codeforces_handle': profile.codeforces_handle or '',
+            'codeforces_verified': profile.is_codeforces_verified,
+            'hackerrank_handle': profile.hackerrank_handle or '',
+            'hackerrank_verified': profile.is_hackerrank_verified,
+        })
+
+    return Response(result)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def checkpoints(request):
+    """GET: list all active checkpoints. POST: create a new checkpoint."""
+    from .models import Checkpoint
+
+    if not (hasattr(request.user, 'profile') and request.user.profile.role == 'teacher'):
+        return Response({'error': 'Only teachers can manage checkpoints'}, status=403)
+
+    if request.method == 'GET':
+        qs = Checkpoint.objects.filter(created_by=request.user, is_active=True)
+        data = [{
+            'id': c.id,
+            'title': c.title,
+            'description': c.description,
+            'cn_problems': c.cn_problems,
+            'cn_score': c.cn_score,
+            'lc_problems': c.lc_problems,
+            'lc_rating': c.lc_rating,
+            'cc_problems': c.cc_problems,
+            'cc_rating': c.cc_rating,
+            'cf_problems': c.cf_problems,
+            'cf_rating': c.cf_rating,
+            'target_batch': c.target_batch,
+            'target_branch': c.target_branch,
+            'deadline': c.deadline.isoformat() if c.deadline else None,
+            'created_at': c.created_at.isoformat(),
+        } for c in qs]
+        return Response(data)
+
+    # POST
+    d = request.data
+    from .models import Checkpoint
+    cp = Checkpoint.objects.create(
+        created_by=request.user,
+        title=d.get('title', 'Checkpoint'),
+        description=d.get('description', ''),
+        cn_problems=int(d.get('cn_problems', 0)),
+        cn_score=int(d.get('cn_score', 0)),
+        lc_problems=int(d.get('lc_problems', 0)),
+        lc_rating=int(d.get('lc_rating', 0)),
+        cc_problems=int(d.get('cc_problems', 0)),
+        cc_rating=int(d.get('cc_rating', 0)),
+        cf_problems=int(d.get('cf_problems', 0)),
+        cf_rating=int(d.get('cf_rating', 0)),
+        target_batch=d.get('target_batch', 'All'),
+        target_branch=d.get('target_branch', 'All'),
+        deadline=d.get('deadline') or None,
+    )
+    return Response({'id': cp.id, 'title': cp.title}, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def checkpoint_delete(request, pk):
+    from .models import Checkpoint
+    if not (hasattr(request.user, 'profile') and request.user.profile.role == 'teacher'):
+        return Response({'error': 'Only teachers'}, status=403)
+    try:
+        cp = Checkpoint.objects.get(id=pk, created_by=request.user)
+        cp.is_active = False
+        cp.save()
+        return Response({'deleted': True})
+    except Checkpoint.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)

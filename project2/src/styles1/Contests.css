@@ -1,219 +1,369 @@
-.contests-container {
-    max-width: 1200px;
-    margin: 80px auto;
+/* Contests Page Styles */
+
+.contests-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+}
+
+.page-section {
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 2rem;
+    padding-top: 6rem;
 }
 
-.contests-header {
-    text-align: center;
-    margin-bottom: 4rem;
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.6s ease;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.contests-header h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1rem;
+.section-title h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.contests-header h1 span {
-    color: var(--primary-color);
+.section-title h1 span {
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-/* Featured Contest */
-.featured-contest {
-    padding: 4rem;
-    border-radius: 32px;
+.section-title p {
+    font-size: 1.1rem;
+    color: #94a3b8;
+}
+
+.btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.4);
+}
+
+/* Filters */
+.filters-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease 0.2s both;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.status-filters {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+    color: #38bdf8;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    border-color: transparent;
+    color: white;
+    font-weight: 600;
+}
+
+.results-count {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-left: auto;
+}
+
+/* Contests Grid */
+.contests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    animation: fadeInUp 0.6s ease 0.3s both;
+}
+
+.contest-card {
+    padding: 1.5rem;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    margin-bottom: 4rem;
-    border: 1px solid var(--primary-color);
-    background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent);
 }
 
-.contest-badge {
+.contest-card::before {
+    content: '';
     position: absolute;
-    top: 2rem;
-    right: 2rem;
-    background: var(--primary-color);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 50px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.contest-main-info h2 {
-    font-size: 2.5rem;
-    margin-bottom: 2rem;
+.contest-card:hover::before {
+    opacity: 1;
 }
 
-.timer-container {
+.contest-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3);
+}
+
+.contest-card.ongoing {
+    border: 2px solid rgba(239, 68, 68, 0.5);
+}
+
+.contest-card.upcoming {
+    border: 2px solid rgba(56, 189, 248, 0.3);
+}
+
+.contest-card.completed {
+    opacity: 0.7;
+}
+
+.contest-header {
     display: flex;
-    gap: 2rem;
-    margin-bottom: 3rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
 }
 
-.timer-unit {
+.contest-header h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #38bdf8;
+    margin: 0;
+    flex: 1;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-badge.upcoming {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+}
+
+.status-badge.ongoing {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    animation: pulse 2s infinite;
+}
+
+.status-badge.completed {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+}
+
+.contest-description {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+}
+
+.contest-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.meta-item {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #64748b;
 }
 
-.timer-unit span {
-    font-size: 3rem;
-    font-weight: 800;
-    color: var(--primary-color);
-}
-
-.timer-unit label {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
+.meta-item svg {
+    color: #38bdf8;
 }
 
 .contest-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 2rem;
-    border-top: 1px solid var(--glass-border);
+    padding-top: 1rem;
+    border-top: 1px solid rgba(56, 189, 248, 0.2);
+    position: relative;
+    z-index: 1;
 }
 
-.meta {
-    display: flex;
-    gap: 2.5rem;
-    color: var(--text-secondary);
+.creator {
+    font-size: 0.85rem;
+    color: #64748b;
 }
 
-.meta span {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.time-remaining {
+    font-size: 0.85rem;
+    color: #ef4444;
+    font-weight: 600;
 }
 
-.register-btn {
-    background: var(--primary-color);
-    color: white;
-    padding: 1rem 2.5rem;
-    border-radius: 12px;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 10px 20px var(--primary-glow);
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    border-radius: 16px;
+    animation: fadeInUp 0.6s ease;
 }
 
-/* Grid */
-.contests-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
-}
-
-.upcoming-section h3,
-.past-section h3 {
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-}
-
-.contests-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.contest-card {
-    padding: 2rem;
-    border-radius: 20px;
-    transition: var(--transition-smooth);
-}
-
-.contest-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary-color);
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.empty-state svg {
+    color: #64748b;
     margin-bottom: 1rem;
 }
 
-.duration {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+.empty-state h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #94a3b8;
 }
 
-.status-badge.ended {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    padding: 0.2rem 0.8rem;
-    border-radius: 50px;
-    font-size: 0.75rem;
-    font-weight: 600;
+.empty-state p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
 }
 
-.winner-row {
+/* Loading */
+.loading-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    min-height: 60vh;
     gap: 1rem;
-    margin: 1.5rem 0;
 }
 
-.winner-row img {
-    width: 45px;
-    height: 45px;
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(56, 189, 248, 0.2);
+    border-top-color: #38bdf8;
     border-radius: 50%;
-    background: var(--surface-color);
-    padding: 5px;
+    animation: spin 1s linear infinite;
 }
 
-.winner-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.winner-name {
-    font-weight: 600;
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.secondary-btn {
-    width: 100%;
-    padding: 0.8rem;
-    background: transparent;
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    color: var(--text-primary);
-    font-weight: 600;
-    cursor: pointer;
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-.text-link {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-@media (max-width: 968px) {
+/* Responsive */
+@media (max-width: 768px) {
+    .section-title h1 {
+        font-size: 2rem;
+    }
+    
     .contests-grid {
         grid-template-columns: 1fr;
     }
-
-    .timer-container {
-        gap: 1rem;
-    }
-
-    .meta {
+    
+    .filters-container {
         flex-direction: column;
-        gap: 0.5rem;
+        align-items: flex-start;
+    }
+    
+    .status-filters {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .results-count {
+        margin-left: 0;
     }
 }

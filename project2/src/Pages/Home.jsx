@@ -6,8 +6,39 @@ import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 import "../styles1/Hero.css";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { getPlatformStats } from "../services/api";
+
 function Home() {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    total_problems_solved: 0,
+    active_users: 0,
+    platform_accuracy: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await getPlatformStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to load platform stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const formatNumber = (num) => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'k+';
+    }
+    return num + '+';
+  };
+
   return (
     <div className="page animate-fade-in">
       <div className="home">
@@ -18,9 +49,14 @@ function Home() {
             Write Code, Analyze Performance, and learn from your Mistakes - All
             in One Place
           </p>
-          <button onClick={() => navigate("/login")} className="get-started magnetic-hover">
-            Get Started
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => navigate("/login")} className="get-started magnetic-hover">
+              Get Started — It's Free
+            </button>
+            <button onClick={() => navigate("/problems")} className="get-started magnetic-hover" style={{ background: 'transparent', border: '2px solid var(--primary-color)', color: 'var(--primary-color)', boxShadow: 'none' }}>
+              Browse Problems
+            </button>
+          </div>
         </section>
         <section className="features">
           <FeatureCard
@@ -63,16 +99,16 @@ function Home() {
 
         <section className="stats-section scroll-reveal">
           <div className="stat-item">
-            <h2>10k+</h2>
+            <h2>{loading ? '...' : formatNumber(stats.total_problems_solved)}</h2>
             <p>Problems Solved</p>
           </div>
           <div className="stat-item">
-            <h2>500+</h2>
+            <h2>{loading ? '...' : formatNumber(stats.active_users)}</h2>
             <p>Active Coders</p>
           </div>
           <div className="stat-item">
-            <h2>98%</h2>
-            <p>AI Accuracy</p>
+            <h2>{loading ? '...' : stats.platform_accuracy.toFixed(0) + '%'}</h2>
+            <p>Success Rate</p>
           </div>
         </section>
 

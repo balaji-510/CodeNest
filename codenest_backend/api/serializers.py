@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from .models import (
     UserProfile, Problem, Submission, Analytics, TopicProgress, 
     Context, ContextProblem, Notification, Achievement, AchievementDefinition, 
-    PlatformAccount, TestCase, Contest, ContestParticipant, ContestSubmission
+    PlatformAccount, TestCase, Contest, ContestParticipant, ContestSubmission,
+    Discussion, DiscussionReply, DiscussionVote
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -35,11 +36,12 @@ class UserSerializer(serializers.ModelSerializer):
     teacher_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     branch = serializers.CharField(write_only=True, required=False, default='CSE')
     batch = serializers.CharField(write_only=True, required=False, default='2024')
+    gender = serializers.CharField(write_only=True, required=False, default='')
     email = serializers.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'role', 'teacher_code', 'branch', 'batch']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'role', 'teacher_code', 'branch', 'batch', 'gender']
     
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -59,6 +61,7 @@ class UserSerializer(serializers.ModelSerializer):
         role = validated_data.pop('role', 'student')
         branch = validated_data.pop('branch', 'CSE')
         batch = validated_data.pop('batch', '2024')
+        gender = validated_data.pop('gender', '')
         validated_data.pop('teacher_code', None) # Remove teacher_code before creating user
         
         user = User.objects.create_user(
@@ -69,8 +72,8 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name', '')
         )
         
-        # Create UserProfile with the role and branch
-        UserProfile.objects.create(user=user, role=role, branch=branch, batch=batch)
+        # Create UserProfile with the role, branch, and gender
+        UserProfile.objects.create(user=user, role=role, branch=branch, batch=batch, gender=gender)
         
         # Create UserStats for the new user
         from .models import UserStats
@@ -83,19 +86,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserProfile
-        fields = ['user', 'rank', 'accuracy', 'active_days', 'role', 'branch', 'bio', 'avatar', 'skills', 'github_link', 'linkedin_link', 'twitter_link', 'leetcode_handle', 'is_leetcode_verified', 'verification_token', 'codechef_handle', 'is_codechef_verified', 'codeforces_handle', 'is_codeforces_verified']
+        fields = ['user', 'rank', 'accuracy', 'active_days', 'role', 'branch', 'bio', 'avatar', 'skills', 'github_link', 'linkedin_link', 'twitter_link', 'leetcode_handle', 'is_leetcode_verified', 'verification_token', 'codechef_handle', 'is_codechef_verified', 'codeforces_handle', 'is_codeforces_verified', 'hackerrank_handle', 'is_hackerrank_verified', 'gender']
 
 class ProblemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Problem
-        fields = ['id', 'title', 'difficulty', 'topic', 'platform', 'url', 'leetcode_url', 'description', 'examples', 'constraints', 'starter_code', 'created_at']
+        fields = ['id', 'title', 'difficulty', 'points', 'topic', 'platform', 'url', 'leetcode_url', 'description', 'examples', 'constraints', 'starter_code', 'created_at']
 
 class SubmissionSerializer(serializers.ModelSerializer):
     problem_title = serializers.ReadOnlyField(source='problem.title')
-    
+    problem_difficulty = serializers.ReadOnlyField(source='problem.difficulty')
+    language_display = serializers.CharField(source='get_language_display', read_only=True)
+
     class Meta:
         model = Submission
-        fields = ['id', 'user', 'problem', 'problem_title', 'status', 'created_at']
+        fields = [
+            'id', 'user', 'problem', 'problem_title', 'problem_difficulty',
+            'status', 'code', 'language', 'language_display',
+            'passed_testcases', 'total_testcases',
+            'execution_time_ms', 'memory_used_kb',
+            'error_message', 'test_results', 'created_at'
+        ]
         read_only_fields = ['user', 'created_at']
 
 class TopicProgressSerializer(serializers.ModelSerializer):
@@ -315,3 +326,47 @@ class ContestLeaderboardSerializer(serializers.Serializer):
     problems_solved = serializers.IntegerField()
     penalty = serializers.IntegerField()
     last_submission_time = serializers.DateTimeField()
+
+
+
+class DiscussionReplySerializer(serializers.ModelSerializer):
+    """Serializer for discussion replies"""
+    author_username = serializers.ReadOnlyField(source='author.username')
+    author_avatar = serializers.SerializerMethodField()
+    child_replies = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DiscussionReply
+        fields = ['id', 'discussion', 'author', 'author_username', 'author_avatar', 
+                  'content', 'parent_reply', 'votes', 'is_solution', 'created_at', 
+                  'updated_at', 'child_replies']
+        read_only_fields = ['author', 'created_at', 'updated_at', 'votes']
+    
+    def get_author_avatar(self, obj):
+        if hasattr(obj.author, 'profile') and obj.author.profile.avatar:
+            return obj.author.profile.avatar
+        return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + obj.author.username
+    
+    def get_child_replies(self, obj):
+        if obj.child_replies.exists():
+            return DiscussionReplySerializer(obj.child_replies.all(), many=True).data
+        return []
+
+
+class DiscussionSerializer(serializers.ModelSerializer):
+    """Serializer for discussion posts"""
+    author_username = serializers.ReadOnlyField(source='author.username')
+    author_avatar = serializers.SerializerMethodField()
+    replies_count = serializers.IntegerField(read_only=True, default=0)
+    
+    class Meta:
+        model = Discussion
+        fields = ['id', 'title', 'content', 'author', 'author_username', 'author_avatar',
+                  'category', 'tags', 'votes', 'views', 'is_pinned', 'is_locked',
+                  'created_at', 'updated_at', 'replies_count']
+        read_only_fields = ['author', 'created_at', 'updated_at', 'votes', 'views']
+    
+    def get_author_avatar(self, obj):
+        if hasattr(obj.author, 'profile') and obj.author.profile.avatar:
+            return obj.author.profile.avatar
+        return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + obj.author.username

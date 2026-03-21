@@ -1,48 +1,93 @@
 import os
 import django
-import sys
 
-# Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'codenest_backend.settings')
 django.setup()
 
-from rest_framework.test import APIRequestFactory
-from django.contrib.auth.models import User
-from api.models import UserProfile
-from api.views import user_dashboard_stats_by_username
+from api.models import User, UserProfile, Submission, Problem, UserStats
+from django.contrib.auth import get_user_model
 
-def check_mine_data():
-    try:
-        user = User.objects.get(username='mine')
-        print(f"User: {user.username} (ID: {user.id})")
-        
-        # Check profile manually
-        profile, created = UserProfile.objects.get_or_create(user=user)
-        print(f"Profile Rank: {profile.rank}")
-        print(f"Verified LeetCode: {profile.is_leetcode_verified}")
-        print(f"LeetCode Handle: {profile.leetcode_handle}")
+print("=" * 60)
+print("CHECKING USER DATA FOR DASHBOARD")
+print("=" * 60)
 
-        # Check API response
-        factory = APIRequestFactory()
-        request = factory.get(f'/api/dashboard-stats/user/{user.username}/')
-        request.user = user # Simulate auth
-        
-        response = user_dashboard_stats_by_username(request, username=user.username)
-        print(f"API Status: {response.status_code}")
-        if response.status_code == 200:
-            data = response.data
-            print(f"API Username: {data.get('username')}")
-            print(f"API Full Name: {data.get('full_name')}")
-            print(f"API Rank: {data.get('rank')}")
-            print(f"API LeetCode Handle: {data.get('leetcode_handle')}")
-        else:
-            print("API Error")
+# Check all users
+users = User.objects.all()
+print(f"\nTotal users: {users.count()}\n")
 
-    except User.DoesNotExist:
-        print("User 'mine' not found.")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+for user in users:
+    print(f"Username: {user.username}")
+    print(f"Email: {user.email}")
+    print(f"First name: {user.first_name}")
+    print(f"Last name: {user.last_name}")
+    
+    # Check profile
+    if hasattr(user, 'profile'):
+        print(f"Role: {user.profile.role}")
+        print(f"Branch: {user.profile.branch}")
+    else:
+        print("Profile: NOT FOUND")
+    
+    # Check stats
+    if hasattr(user, 'stats'):
+        print(f"Score: {user.stats.score}")
+        print(f"Problems solved: {user.stats.problems_solved}")
+    else:
+        print("Stats: NOT FOUND")
+    
+    # Check submissions
+    subs = Submission.objects.filter(user=user)
+    accepted = subs.filter(status='ACCEPTED').count()
+    print(f"Total submissions: {subs.count()}")
+    print(f"Accepted submissions: {accepted}")
+    
+    print("-" * 60)
 
-if __name__ == "__main__":
-    check_mine_data()
+print("\n" + "=" * 60)
+print("CHECKING SPECIFIC USER: Balaji_Student")
+print("=" * 60)
+
+try:
+    student = User.objects.get(username='Balaji_Student')
+    print(f"\n✓ User found: {student.username}")
+    print(f"ID: {student.id}")
+    print(f"Email: {student.email}")
+    print(f"Name: {student.first_name} {student.last_name}")
+    
+    if hasattr(student, 'profile'):
+        print(f"\n✓ Profile found")
+        print(f"Role: {student.profile.role}")
+        print(f"Branch: {student.profile.branch}")
+    
+    if hasattr(student, 'stats'):
+        print(f"\n✓ Stats found")
+        print(f"Score: {student.stats.score}")
+        print(f"Problems solved: {student.stats.problems_solved}")
+    
+    # Check submissions in detail
+    print(f"\n✓ Submissions:")
+    subs = Submission.objects.filter(user=student).order_by('-created_at')
+    for sub in subs:
+        print(f"  - ID: {sub.id}")
+        print(f"    Problem: {sub.problem.title}")
+        print(f"    Status: {sub.status}")
+        print(f"    Language: {sub.language}")
+        print(f"    Code length: {len(sub.code)} chars")
+        print(f"    Passed: {sub.passed_testcases}/{sub.total_testcases}")
+        print(f"    Created: {sub.created_at}")
+        print()
+    
+except User.DoesNotExist:
+    print("\n✗ User 'Balaji_Student' NOT FOUND")
+
+print("\n" + "=" * 60)
+print("CHECKING TEACHER ACCESS")
+print("=" * 60)
+
+teachers = User.objects.filter(profile__role='teacher')
+print(f"\nTotal teachers: {teachers.count()}")
+
+for teacher in teachers:
+    print(f"\nTeacher: {teacher.username}")
+    print(f"Can access mentor dashboard: YES")
+    print(f"Should see student stats: YES")

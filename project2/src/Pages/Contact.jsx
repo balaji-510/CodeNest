@@ -1,13 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { Mail, Phone, MapPin, Send, MessageCircle } from 'lucide-react';
+import { ToastContainer } from '../Components/Toast';
+import { useToast } from '../hooks/useToast';
 import '../styles1/Hero.css';
 
 const Contact = () => {
-    const handleSubmit = (e) => {
+    const { toasts, removeToast, showSuccess, showError } = useToast();
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        subject: 'general',
+        message: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert('Message sent successfully!');
+        setIsSubmitting(true);
+
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            showSuccess('Message sent successfully! We\'ll get back to you soon.');
+            
+            // Reset form
+            setFormData({
+                name: '',
+                email: '',
+                subject: 'general',
+                message: ''
+            });
+        } catch (error) {
+            showError('Failed to send message. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -33,6 +70,9 @@ const Contact = () => {
                                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Full Name</label>
                                     <input
                                         type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
                                         placeholder="John Doe"
                                         style={{
                                             width: '100%',
@@ -50,6 +90,9 @@ const Contact = () => {
                                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Email Address</label>
                                     <input
                                         type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
                                         placeholder="john@example.com"
                                         style={{
                                             width: '100%',
@@ -66,15 +109,19 @@ const Contact = () => {
                             </div>
                             <div className="form-group">
                                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Subject</label>
-                                <select style={{
-                                    width: '100%',
-                                    padding: '1rem',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: '1px solid var(--glass-border)',
-                                    borderRadius: '12px',
-                                    color: 'white',
-                                    outline: 'none'
-                                }}>
+                                <select 
+                                    name="subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid var(--glass-border)',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        outline: 'none'
+                                    }}>
                                     <option value="general">General Inquiry</option>
                                     <option value="support">Technical Support</option>
                                     <option value="feedback">Feedback</option>
@@ -84,6 +131,9 @@ const Contact = () => {
                             <div className="form-group">
                                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Message</label>
                                 <textarea
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
                                     rows="5"
                                     placeholder="Tell us what's on your mind..."
                                     style={{
@@ -99,18 +149,24 @@ const Contact = () => {
                                     required
                                 ></textarea>
                             </div>
-                            <button className="magnetic-hover" style={{
-                                padding: '1rem 2rem',
-                                background: 'var(--primary-color)',
-                                color: 'white',
-                                borderRadius: '12px',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <Send size={18} /> Send Message
+                            <button 
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="magnetic-hover" 
+                                style={{
+                                    padding: '1rem 2rem',
+                                    background: isSubmitting ? 'var(--text-secondary)' : 'var(--primary-color)',
+                                    color: 'white',
+                                    borderRadius: '12px',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                    opacity: isSubmitting ? 0.7 : 1
+                                }}>
+                                <Send size={18} /> {isSubmitting ? 'Sending...' : 'Send Message'}
                             </button>
                         </form>
                     </section>
@@ -176,6 +232,7 @@ const Contact = () => {
                 </div>
             </main>
             <Footer />
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
         </div>
     );
 };

@@ -3,10 +3,13 @@ import Navbar from '../Components/Navbar';
 import Footer from '../Components/Footer';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { ToastContainer } from '../Components/Toast';
+import { useToast } from '../hooks/useToast';
 import '../styles1/MentorDashboard.css'; // Reusing mentor styles
 
 const CreateContext = () => {
     const navigate = useNavigate();
+    const { toasts, removeToast, showSuccess, showError, showWarning } = useToast();
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -71,12 +74,12 @@ const CreateContext = () => {
 
         // Basic Validation
         if (new Date(formData.start_time) >= new Date(formData.end_time)) {
-            alert("End time must be after start time.");
+            showError("End time must be after start time.");
             setLoading(false);
             return;
         }
         if (selectedProblems.length === 0) {
-            alert("Please select at least one problem.");
+            showError("Please select at least one problem.");
             setLoading(false);
             return;
         }
@@ -87,11 +90,11 @@ const CreateContext = () => {
                 problems: selectedProblems
             };
             await api.post('/contexts/', payload);
-            alert("Context Created Successfully!");
-            navigate('/mentor-dashboard');
+            showSuccess("Context Created Successfully!");
+            setTimeout(() => navigate('/mentor-dashboard'), 1500);
         } catch (error) {
             console.error("Creation failed", error);
-            alert("Failed to create context. " + (error.response?.data?.error || error.message));
+            showError("Failed to create context. " + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
         }
@@ -269,6 +272,7 @@ const CreateContext = () => {
                 </form>
             </main>
             <Footer />
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
         </div>
     );
 };

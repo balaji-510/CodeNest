@@ -1,20 +1,26 @@
 export const fetchLeetCodeStats = async (username) => {
     try {
-        const response = await fetch(`https://leetcode-stats-api.herokuapp.com/${username}`);
-        const data = await response.json();
-        if (data.status === "success") {
-            return {
-                platform: "LeetCode",
-                totalSolved: data.totalSolved,
-                easySolved: data.easySolved,
-                mediumSolved: data.mediumSolved,
-                hardSolved: data.hardSolved,
-                acceptanceRate: data.acceptanceRate,
-                ranking: data.ranking,
-                contributionPoints: data.contributionPoints,
-            };
+        // Call our backend proxy to avoid CORS issues with LeetCode's GraphQL API
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`http://localhost:8000/api/leetcode-stats/?username=${encodeURIComponent(username)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            console.error("LeetCode proxy error:", response.status);
+            return null;
         }
-        return null;
+
+        const data = await response.json();
+        if (data.error) {
+            console.error("LeetCode API Error:", data.error);
+            return null;
+        }
+
+        return data;
     } catch (error) {
         console.error("Error fetching LeetCode stats:", error);
         return null;
@@ -27,6 +33,24 @@ export const fetchCodeforcesStats = async (username) => {
         const data = await response.json();
         if (data.status === "OK") {
             const user = data.result[0];
+
+            // Also fetch solved count from user.status (accepted submissions, distinct problems)
+            let problemsSolved = 0;
+            try {
+                const statusResp = await fetch(
+                    `https://codeforces.com/api/user.status?handle=${username}&from=1&count=1000`
+                );
+                const statusData = await statusResp.json();
+                if (statusData.status === 'OK') {
+                    const solvedSet = new Set(
+                        statusData.result
+                            .filter(s => s.verdict === 'OK')
+                            .map(s => `${s.problem.contestId}-${s.problem.index}`)
+                    );
+                    problemsSolved = solvedSet.size;
+                }
+            } catch (_) { /* ignore */ }
+
             return {
                 platform: "Codeforces",
                 rating: user.rating || 0,
@@ -35,6 +59,7 @@ export const fetchCodeforcesStats = async (username) => {
                 maxRank: user.maxRank || "unrated",
                 contribution: user.contribution || 0,
                 organization: user.organization || "",
+                problemsSolved,
             };
         }
         return null;
@@ -46,45 +71,26 @@ export const fetchCodeforcesStats = async (username) => {
 
 export const fetchCodeChefStats = async (username) => {
     try {
-        // Fetch HTML via local proxy to bypass CORS
-        const response = await fetch(`/api/codechef/users/${username}`);
-        const html = await response.text();
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`http://localhost:8000/api/codechef-stats/?username=${encodeURIComponent(username)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        });
 
-        // Simple parser using regex (robustness depends on CodeChef UI stability)
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        const ratingElement = doc.querySelector('.rating-number');
-        const starsElement = doc.querySelector('.rating-star'); // varies often, checking .rating-star or simple regex
-        const globalRankElement = doc.querySelector('.rating-ranks ul li:first-child a strong');
-        // const countryRankElement = doc.querySelector('.rating-ranks ul li:last-child a strong'); // Unused
-
-        // Extracting Solved Count (e.g. "Fully Solved (123)")
-        const solvedElement = doc.querySelector('.rating-data-section:nth-child(1) h3');
-        let totalSolved = 0;
-        if (solvedElement && solvedElement.innerText.includes('Fully Solved')) {
-            const match = solvedElement.innerText.match(/\((\d+)\)/);
-            if (match) totalSolved = parseInt(match[1]);
+        if (!response.ok) {
+            console.error("CodeChef proxy error:", response.status);
+            return null;
         }
 
-        // Fallback or Regex if DOM query fails
-        const rating = ratingElement ? parseInt(ratingElement.innerText) : 0;
-        const stars = starsElement ? starsElement.innerText : "1★";
-        const globalRank = globalRankElement ? globalRankElement.innerText : "N/A";
-        // const countryRank = countryRankElement ? countryRankElement.innerText : "N/A";
-
-        if (response.ok) {
-            return {
-                platform: "CodeChef",
-                rating: rating,
-                stars: stars,
-                globalRank: globalRank,
-                countryRank: "N/A", // keeping simple
-                highestRating: 0, // Simplified
-                totalSolved: totalSolved
-            };
+        const data = await response.json();
+        if (data.error) {
+            console.error("CodeChef API Error:", data.error);
+            return null;
         }
-        return null;
+
+        return data;
     } catch (error) {
         console.error("Error fetching CodeChef stats:", error);
         return null;
@@ -103,6 +109,37 @@ export const syncAllStats = async (handles) => {
     if (handles.codechef) {
         results.codechef = await fetchCodeChefStats(handles.codechef);
     }
+    if (handles.hackerrank) {
+        results.hackerrank = await fetchHackerRankStats(handles.hackerrank);
+    }
 
     return results;
+};
+
+export const fetchHackerRankStats = async (username) => {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`http://localhost:8000/api/hackerrank-stats/?username=${encodeURIComponent(username)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            console.error("HackerRank proxy error:", response.status);
+            return null;
+        }
+
+        const data = await response.json();
+        if (data.error) {
+            console.error("HackerRank API Error:", data.error);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        console.error("Error fetching HackerRank stats:", error);
+        return null;
+    }
 };

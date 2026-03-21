@@ -1,0 +1,79 @@
+
+
+
+/* Monaco Editor Autocomplete Global Styles */
+.monaco-editor .suggest-widget {
+    background: #252526 !important;
+    border: 1px solid #454545 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+    z-index: 10000 !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row {
+    background: transparent !important;
+    color: #ffffff !important;
+    padding: 4px 8px !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row:hover {
+    background: #2a2d2e !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused {
+    background: #094771 !important;
+    color: #ffffff !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .label-name,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .codicon,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row span {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused .label-name {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.monaco-editor .suggest-widget .details {
+    background: #252526 !important;
+    border-left: 1px solid #454545 !important;
+    color: #cccccc !important;
+}
+
+/* Ensure all text in suggest widget is visible */
+.monaco-editor .suggest-widget * {
+    color: #ffffff !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row .monaco-icon-label {
+    color: #ffffff !important;
+}
+
+/* More specific targeting for suggestion text */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .monaco-icon-label .label-name,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .monaco-icon-label-container,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .monaco-icon-label-container .monaco-icon-label,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .monaco-icon-label-container .monaco-icon-label .label-name {
+    color: #ffffff !important;
+}
+
+/* Target all children */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row * {
+    color: #ffffff !important;
+}
+
+/* Focused row - all children white */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused * {
+    color: #ffffff !important;
+}
+
+/* Override any inline styles */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row[style] {
+    color: #ffffff !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row[style] * {
+    color: #ffffff !important;
+}
