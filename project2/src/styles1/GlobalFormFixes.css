@@ -188,3 +188,110 @@ input:read-only,
 textarea:read-only {
     color: #cbd5e1 !important;
 }
+
+/* ── Light theme: global input/textarea visibility ─────────────────────── */
+.light-theme input[type="text"],
+.light-theme input[type="email"],
+.light-theme input[type="password"],
+.light-theme input[type="number"],
+.light-theme input[type="search"],
+.light-theme input[type="url"],
+.light-theme textarea {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+    border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+.light-theme input::placeholder,
+.light-theme textarea::placeholder {
+    color: #64748b !important;
+    opacity: 1;
+}
+
+.light-theme input:focus,
+.light-theme textarea:focus {
+    background-color: #ffffff !important;
+    border-color: #0284c7 !important;
+}
+
+.light-theme select,
+.light-theme select option {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+}
+
+/* ── Light theme: card/glass text visibility ────────────────────────────── */
+.light-theme .glass-effect {
+    color: #0f172a;
+}
+
+.light-theme h1,
+.light-theme h2,
+.light-theme h3,
+.light-theme h4,
+.light-theme h5,
+.light-theme h6 {
+    color: #0f172a;
+}
+
+.light-theme p,
+.light-theme span,
+.light-theme label {
+    color: #334155;
+}
+
+/* Keep primary-colored elements their color */
+.light-theme .primary-text,
+.light-theme [class*="primary"],
+.light-theme .user-handle,
+.light-theme .account-link {
+    color: #0284c7 !important;
+}
+
+/* ── Light theme: code/pre blocks ───────────────────────────────────────── */
+.light-theme code {
+    background: rgba(2, 132, 199, 0.08);
+    color: #0f172a;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* ── Light theme: stat cards ────────────────────────────────────────────── */
+.light-theme .stat-value {
+    color: #0f172a;
+}
+
+.light-theme .card-trend {
+    color: #475569;
+}
+
+/* ── Light theme: skeleton shimmer ─────────────────────────────────────── */
+.light-theme .skeleton {
+    background: linear-gradient(90deg,
+        rgba(2, 132, 199, 0.05) 25%,
+        rgba(2, 132, 199, 0.12) 50%,
+        rgba(2, 132, 199, 0.05) 75%);
+    background-size: 200% 100%;
+}
+
+/* ── Light theme: modal/overlay backgrounds ─────────────────────────────── */
+.light-theme .modal-overlay,
+.light-theme .modal-content {
+    background: rgba(255, 255, 255, 0.97);
+    color: #0f172a;
+}
+
+/* ── Light theme: table text ────────────────────────────────────────────── */
+.light-theme table,
+.light-theme th,
+.light-theme td {
+    color: #0f172a;
+}
+
+.light-theme th {
+    background: rgba(2, 132, 199, 0.08);
+}
+
+.light-theme tr:hover td {
+    background: rgba(2, 132, 199, 0.04);
+}

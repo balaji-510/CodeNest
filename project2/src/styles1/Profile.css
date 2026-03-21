@@ -601,3 +601,123 @@
         margin: 0 auto;
     }
 }
+
+/* ── Edit Profile Form ─────────────────────────────────────────────────── */
+.edit-profile-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.edit-input {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    background: var(--surface-color);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+}
+
+.edit-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.edit-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.name-input {
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.bio-input {
+    min-height: 80px;
+    text-align: left;
+}
+
+.skills-input {
+    min-height: 60px;
+    text-align: left;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 0.25rem;
+}
+
+/* ── Light theme overrides for edit inputs ─────────────────────────────── */
+.light-theme .edit-input {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.25);
+    color: #0f172a;
+}
+
+.light-theme .edit-input:focus {
+    border-color: #0284c7;
+    background: #ffffff;
+}
+
+.light-theme .edit-input::placeholder {
+    color: #64748b;
+}
+
+/* ── Light theme: general text visibility fixes ────────────────────────── */
+.light-theme .user-bio,
+.light-theme .activity-time,
+.light-theme .platform-name,
+.light-theme .stat-label {
+    color: #334155;
+}
+
+.light-theme .skill-tag {
+    background: rgba(2, 132, 199, 0.1);
+    color: #0284c7;
+    border-color: rgba(2, 132, 199, 0.25);
+}
+
+.light-theme .account-item {
+    background: rgba(2, 132, 199, 0.04);
+    border-color: rgba(2, 132, 199, 0.12);
+}
+
+.light-theme .activity-item {
+    background: rgba(2, 132, 199, 0.03);
+}
+
+.light-theme .achievement-showcase-item {
+    background: rgba(2, 132, 199, 0.05);
+    border-color: rgba(2, 132, 199, 0.15);
+}
+
+.light-theme .achievement-details h4 {
+    color: #0f172a;
+}
+
+.light-theme .achievement-details p {
+    color: #475569;
+}
+
+.light-theme .icon-btn-small {
+    background: rgba(2, 132, 199, 0.08);
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #334155;
+}
+
+.light-theme .social-btn {
+    background: rgba(2, 132, 199, 0.06);
+    color: #334155;
+    border-color: rgba(2, 132, 199, 0.15);
+}
