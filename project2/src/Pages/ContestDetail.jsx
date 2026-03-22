@@ -229,45 +229,53 @@ function ContestDetail() {
                             </h2>
                             {contest.problems && contest.problems.length > 0 ? (
                                 <div className="problems-list">
-                                    {contest.problems.map((problem, index) => (
-                                        <div 
-                                            key={problem.id} 
-                                            className="problem-item"
-                                            onClick={() => {
-                                                if (contest.status === 'ongoing' && hasJoined) {
-                                                    // Navigate to contest arena with this problem
-                                                    navigate(`/contest/${id}/arena?problem=${problem.id}`);
-                                                } else if (contest.status === 'ongoing' && !hasJoined) {
-                                                    alert('Please join the contest first');
-                                                } else if (contest.status === 'upcoming') {
-                                                    alert('Contest has not started yet');
-                                                } else {
-                                                    // For completed contests or practice, allow solving
-                                                    navigate(`/solve/${problem.id}`);
-                                                }
-                                            }}
-                                            style={{ cursor: 'pointer' }}
-                                        >
-                                            <div className="problem-info">
-                                                <span className="problem-number">{String.fromCharCode(65 + index)}</span>
-                                                <div>
-                                                    <h4>{problem.title}</h4>
-                                                    <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>
-                                                        {problem.difficulty}
-                                                    </span>
+                                    {contest.problems.map((problem, index) => {
+                                        const pts = problem.difficulty === 'Hard' ? 20 : problem.difficulty === 'Medium' ? 15 : 10;
+                                        const canSolve = (contest.status === 'ongoing' && hasJoined) || contest.status === 'completed';
+                                        return (
+                                            <div
+                                                key={problem.id}
+                                                className={`problem-item ${canSolve ? 'clickable' : ''}`}
+                                                onClick={() => {
+                                                    if (contest.status === 'ongoing' && hasJoined) {
+                                                        navigate(`/contest/${id}/arena?problem=${problem.id}`);
+                                                    } else if (contest.status === 'ongoing' && !hasJoined) {
+                                                        alert('Please join the contest first');
+                                                    } else if (contest.status === 'upcoming') {
+                                                        alert('Contest has not started yet');
+                                                    } else {
+                                                        navigate(`/solve/${problem.id}`);
+                                                    }
+                                                }}
+                                                style={{ cursor: canSolve ? 'pointer' : 'default' }}
+                                            >
+                                                <div className="problem-info">
+                                                    <span className="problem-number">{String.fromCharCode(65 + index)}</span>
+                                                    <div>
+                                                        <h4>{problem.title}</h4>
+                                                        <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>
+                                                            {problem.difficulty}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="problem-actions">
+                                                    <span className="problem-points">{pts} pts</span>
+                                                    {contest.status === 'ongoing' && hasJoined && (
+                                                        <span className="solve-badge">Solve →</span>
+                                                    )}
+                                                    {contest.status === 'completed' && (
+                                                        <span className="practice-badge">Practice →</span>
+                                                    )}
+                                                    {contest.status === 'upcoming' && (
+                                                        <span className="locked-badge">🔒 Locked</span>
+                                                    )}
+                                                    {contest.status === 'ongoing' && !hasJoined && (
+                                                        <span className="locked-badge">Join to Solve</span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="problem-actions">
-                                                <span className="problem-points">100 pts</span>
-                                                {contest.status === 'ongoing' && hasJoined && (
-                                                    <span className="solve-badge">Solve →</span>
-                                                )}
-                                                {contest.status === 'completed' && (
-                                                    <span className="practice-badge">Practice →</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <p className="no-problems">No problems added yet</p>

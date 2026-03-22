@@ -499,3 +499,17 @@
     transform: translateX(5px);
     background: rgba(129, 140, 248, 0.3);
 }
+
+.locked-badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.problem-item.clickable:hover {
+    background: rgba(56, 189, 248, 0.05);
+    border-color: rgba(56, 189, 248, 0.2);
+}

@@ -2963,23 +2963,46 @@ def checkpoints(request):
     # POST
     d = request.data
     from .models import Checkpoint
+
+    def safe_int(val, default=0):
+        try:
+            return int(val) if val not in (None, '', 'null') else default
+        except (ValueError, TypeError):
+            return default
+
     cp = Checkpoint.objects.create(
         created_by=request.user,
         title=d.get('title', 'Checkpoint'),
         description=d.get('description', ''),
-        cn_problems=int(d.get('cn_problems', 0)),
-        cn_score=int(d.get('cn_score', 0)),
-        lc_problems=int(d.get('lc_problems', 0)),
-        lc_rating=int(d.get('lc_rating', 0)),
-        cc_problems=int(d.get('cc_problems', 0)),
-        cc_rating=int(d.get('cc_rating', 0)),
-        cf_problems=int(d.get('cf_problems', 0)),
-        cf_rating=int(d.get('cf_rating', 0)),
+        cn_problems=safe_int(d.get('cn_problems')),
+        cn_score=safe_int(d.get('cn_score')),
+        lc_problems=safe_int(d.get('lc_problems')),
+        lc_rating=safe_int(d.get('lc_rating')),
+        cc_problems=safe_int(d.get('cc_problems')),
+        cc_rating=safe_int(d.get('cc_rating')),
+        cf_problems=safe_int(d.get('cf_problems')),
+        cf_rating=safe_int(d.get('cf_rating')),
         target_batch=d.get('target_batch', 'All'),
         target_branch=d.get('target_branch', 'All'),
         deadline=d.get('deadline') or None,
     )
-    return Response({'id': cp.id, 'title': cp.title}, status=201)
+    return Response({
+        'id': cp.id,
+        'title': cp.title,
+        'description': cp.description,
+        'cn_problems': cp.cn_problems,
+        'cn_score': cp.cn_score,
+        'lc_problems': cp.lc_problems,
+        'lc_rating': cp.lc_rating,
+        'cc_problems': cp.cc_problems,
+        'cc_rating': cp.cc_rating,
+        'cf_problems': cp.cf_problems,
+        'cf_rating': cp.cf_rating,
+        'target_batch': cp.target_batch,
+        'target_branch': cp.target_branch,
+        'deadline': cp.deadline.isoformat() if cp.deadline else None,
+        'created_at': cp.created_at.isoformat(),
+    }, status=201)
 
 
 @api_view(['DELETE'])

@@ -25,6 +25,7 @@ const MentorDashboard = () => {
         studentStats: [],
         topicMastery: []
     });
+    const [checkpoints, setCheckpoints] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -35,6 +36,16 @@ const MentorDashboard = () => {
                 console.log("📊 Student count:", data.studentStats?.length || 0);
                 console.log("📈 Stats:", data.stats);
                 setDashboardData(data);
+
+                // Fetch checkpoints
+                const token = localStorage.getItem('access_token');
+                const cpRes = await fetch('http://localhost:8000/api/checkpoints/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (cpRes.ok) {
+                    const cpData = await cpRes.json();
+                    setCheckpoints(Array.isArray(cpData) ? cpData : []);
+                }
             } catch (error) {
                 console.error("❌ Failed to fetch mentor stats:", error);
                 console.error("Error details:", error.response?.data || error.message);
@@ -78,9 +89,7 @@ const MentorDashboard = () => {
                         <p>Monitor class performance and track individual student growth across branches.</p>
                     </div>
                     <div className="header-actions">
-                        <button className="button secondary magnetic-hover" onClick={handleExport}>Export Report</button>
                         <button className="button secondary magnetic-hover" onClick={() => navigate('/contests-management')}>Manage Contests</button>
-                        <button className="button primary magnetic-hover" onClick={() => navigate('/create-context')}>Create Context</button>
                     </div>
                 </header>
 
@@ -100,9 +109,44 @@ const MentorDashboard = () => {
                     ))}
                 </section>
 
+                {/* Active Checkpoints */}
+                {checkpoints.length > 0 && (
+                    <section className="glass-effect" style={{ padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                        <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>🎯 Active Checkpoints</h3>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            {checkpoints.map(cp => (
+                                <div key={cp.id} className="glass-effect" style={{ padding: '0.9rem 1rem', borderRadius: '10px', minWidth: '220px', maxWidth: '300px', flex: 1 }}>
+                                    <strong style={{ fontSize: '0.88rem' }}>{cp.title}</strong>
+                                    {cp.description && <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.3rem 0 0.5rem' }}>{cp.description}</p>}
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.4rem' }}>
+                                        {cp.cn_problems > 0 && <span className="sb-tag cn">CN: {cp.cn_problems} solved</span>}
+                                        {cp.cn_score > 0 && <span className="sb-tag cn">CN: {cp.cn_score} pts</span>}
+                                        {cp.lc_problems > 0 && <span className="sb-tag lc">LC: {cp.lc_problems} solved</span>}
+                                        {cp.lc_rating > 0 && <span className="sb-tag lc">LC: {cp.lc_rating} rating</span>}
+                                        {cp.cc_problems > 0 && <span className="sb-tag cc">CC: {cp.cc_problems} solved</span>}
+                                        {cp.cc_rating > 0 && <span className="sb-tag cc">CC: {cp.cc_rating} rating</span>}
+                                        {cp.cf_problems > 0 && <span className="sb-tag cf">CF: {cp.cf_problems} solved</span>}
+                                        {cp.cf_rating > 0 && <span className="sb-tag cf">CF: {cp.cf_rating} rating</span>}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                                        {cp.target_branch !== 'All' && <span>Branch: {cp.target_branch}</span>}
+                                        {cp.target_batch !== 'All' && <span>Batch: {cp.target_batch}</span>}
+                                        {cp.deadline && <span>Due: {cp.deadline}</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: '0.75rem' }}>
+                            <button className="button secondary magnetic-hover" style={{ fontSize: '0.82rem', padding: '0.4rem 1rem' }}
+                                onClick={() => window.location.href = '/student-activity'}>
+                                Manage Checkpoints →
+                            </button>
+                        </div>
+                    </section>
+                )}
+
                 <div className="mentor-grid">
-                    {/* Branch-wise Performance */}
-                    <section className="chart-section glass-effect">
+                    {/* Branch-wise Performance */}                    <section className="chart-section glass-effect">
                         <h3>Branch Comparison (Avg. Problems Solved)</h3>
                         <div className="chart-container" style={{ height: '300px', marginTop: '1.5rem' }}>
                             <ResponsiveContainer width="100%" height="100%">

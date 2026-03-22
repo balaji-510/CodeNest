@@ -234,16 +234,15 @@ const StudentActivity = () => {
   const highRiskCount = enriched.filter(s => s.risk === 'high').length;
 
   const handleSaveCheckpoint = async (form) => {
+    const token = localStorage.getItem('access_token');
     const res = await fetch('http://localhost:8000/api/checkpoints/', {
       method: 'POST',
-      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
     if (res.ok) {
       const cp = await res.json();
-      // Refetch checkpoints
-      fetch('http://localhost:8000/api/checkpoints/', { headers: authHeaders })
-        .then(r => r.json()).then(d => setCheckpoints(Array.isArray(d) ? d : []));
+      setCheckpoints(prev => [...prev, cp]);
     }
     setShowModal(false);
   };

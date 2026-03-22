@@ -17,6 +17,7 @@ function Dashboard() {
   const [externalStats, setExternalStats] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [contests, setContests] = useState([]);
+  const [liveContests, setLiveContests] = useState([]);
   const [loadingContests, setLoadingContests] = useState(true);
   const [dailyChallenge, setDailyChallenge] = useState(null);
 
@@ -66,7 +67,7 @@ function Dashboard() {
     };
   }, [username]);
 
-  // Fetch Real Contests
+  // Fetch Real Contests + Live CoderNest Contests
   useEffect(() => {
     const fetchContests = async () => {
       try {
@@ -84,7 +85,24 @@ function Dashboard() {
         setLoadingContests(false);
       }
     };
+
+    const fetchLiveContests = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch('http://localhost:8000/api/contests/', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const live = (Array.isArray(data) ? data : data.results || [])
+            .filter(c => c.status === 'ongoing');
+          setLiveContests(live);
+        }
+      } catch (e) { /* ignore */ }
+    };
+
     fetchContests();
+    fetchLiveContests();
   }, []);
 
   const handleSync = async () => {
@@ -445,6 +463,25 @@ function Dashboard() {
                 </div>
 
                 <div className="upcoming-contests-card glass-effect scroll-reveal">
+                  {liveContests.length > 0 && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'glow 1.5s infinite' }}></span>
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#ef4444' }}>Live Now</h3>
+                      </div>
+                      {liveContests.map(c => (
+                        <div key={c.id} className="contest-item-mini" style={{ borderLeft: '3px solid #ef4444', paddingLeft: '0.75rem', cursor: 'pointer' }}
+                          onClick={() => navigate(`/contest/${c.id}`)}>
+                          <div className="contest-info-mini" style={{ flex: 1 }}>
+                            <h4 style={{ color: '#f1f5f9' }}>{c.title}</h4>
+                            <p style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{c.participant_count || 0} participants</p>
+                          </div>
+                          <span style={{ fontSize: '0.78rem', background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '3px 8px', borderRadius: 6, fontWeight: 600 }}>Enter →</span>
+                        </div>
+                      ))}
+                      <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.75rem 0' }} />
+                    </div>
+                  )}
                   <div className="card-header-flex">
                     <h3>Upcoming Contests</h3>
                     <button className="view-all-link" onClick={() => navigate('/contests')}>View all</button>

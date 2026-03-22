@@ -198,7 +198,18 @@ function AIAssistant({ code, language, problemTitle, problemDescription }) {
                                     {msg.role === "assistant" ? <Bot size={20} /> : "👤"}
                                 </div>
                                 <div className="message-content">
-                                    <div className="message-text">{msg.content}</div>
+                                    <div className="message-text">
+                                      {msg.content.split('\n').map((line, li) => (
+                                        <span key={li}>
+                                          {line.split(/(\*\*[^*]+\*\*)/g).map((part, pi) =>
+                                            part.startsWith('**') && part.endsWith('**')
+                                              ? <strong key={pi}>{part.slice(2, -2)}</strong>
+                                              : part
+                                          )}
+                                          {li < msg.content.split('\n').length - 1 && <br />}
+                                        </span>
+                                      ))}
+                                    </div>
                                 </div>
                             </div>
                         ))}

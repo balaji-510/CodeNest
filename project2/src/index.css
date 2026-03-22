@@ -287,3 +287,112 @@ ul {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME — Global Visibility Fixes
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Cards & surfaces */
+.light-theme .glass-effect {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(2, 132, 199, 0.12) !important;
+  box-shadow: 0 4px 24px rgba(2, 132, 199, 0.08) !important;
+}
+
+/* All text inside glass cards */
+.light-theme .glass-effect h1,
+.light-theme .glass-effect h2,
+.light-theme .glass-effect h3,
+.light-theme .glass-effect h4,
+.light-theme .glass-effect p,
+.light-theme .glass-effect span,
+.light-theme .glass-effect label,
+.light-theme .glass-effect li,
+.light-theme .glass-effect td,
+.light-theme .glass-effect th {
+  color: var(--text-primary);
+}
+
+/* Scoreboard */
+.light-theme .sb-cell,
+.light-theme .sb-student-name { color: #0f172a !important; }
+.light-theme .sb-student-meta { color: #475569 !important; }
+.light-theme .sb-header-main th,
+.light-theme .sb-header-sub th { background: #f1f5f9 !important; color: #475569 !important; }
+.light-theme .sb-row:hover { background: rgba(2,132,199,0.04) !important; }
+.light-theme .sb-row:hover .sticky-col,
+.light-theme .sb-row:hover .sticky-col2 { background: #e8f4fd !important; }
+.light-theme .sticky-col,
+.light-theme .sticky-col2 { background: #ffffff !important; }
+.light-theme .sb-total-score { color: #0284c7 !important; }
+.light-theme .sb-cn-score { color: #0284c7 !important; }
+.light-theme .sb-no-handle { color: #94a3b8 !important; }
+.light-theme .sb-table-wrap { border-color: rgba(2,132,199,0.15) !important; }
+
+/* Student Activity */
+.light-theme .sa-table thead th { background: #f1f5f9 !important; color: #475569 !important; }
+.light-theme .sa-table td { color: #0f172a !important; }
+.light-theme .sa-student-name { color: #0f172a !important; }
+.light-theme .sa-student-meta { color: #475569 !important; }
+.light-theme .sa-search,
+.light-theme .sa-filter { background: #f1f5f9 !important; color: #0f172a !important; border-color: rgba(2,132,199,0.2) !important; }
+.light-theme .sa-summary-val { color: #0f172a !important; }
+.light-theme .sa-summary-label { color: #475569 !important; }
+
+/* Mentor Dashboard */
+.light-theme .stat-card .label { color: #475569 !important; }
+.light-theme .stat-card .value { color: #0f172a !important; }
+.light-theme .stat-card .trend { color: #475569 !important; }
+.light-theme .chart-section h3 { color: #0f172a !important; }
+
+/* Dashboard */
+.light-theme .card h2 { color: #475569 !important; }
+.light-theme .card p { color: #0f172a !important; }
+.light-theme .card-trend { color: #475569 !important; }
+.light-theme .p-label { color: #475569 !important; }
+.light-theme .p-value { color: #0f172a !important; }
+.light-theme .activity-title { color: #0f172a !important; }
+.light-theme .date { color: #64748b !important; }
+.light-theme .topic-item span { color: #0f172a !important; }
+.light-theme .contest-info-mini h4 { color: #0f172a !important; }
+.light-theme .contest-info-mini p { color: #475569 !important; }
+
+/* Profile */
+.light-theme .user-name { color: #0f172a !important; }
+.light-theme .user-handle { color: #475569 !important; }
+.light-theme .user-bio { color: #334155 !important; }
+.light-theme .platform-name { color: #0f172a !important; }
+.light-theme .account-link { color: #0284c7 !important; }
+.light-theme .skill-tag { background: rgba(2,132,199,0.1) !important; color: #0284c7 !important; }
+.light-theme .stat-label { color: #475569 !important; }
+.light-theme .stat-value { color: #0f172a !important; }
+.light-theme .activity-text { color: #0f172a !important; }
+.light-theme .activity-time { color: #64748b !important; }
+
+/* Problems page */
+.light-theme .problem-title { color: #0f172a !important; }
+.light-theme .problem-topic { color: #475569 !important; }
+
+/* Buttons — secondary style in light mode */
+.light-theme .button.secondary,
+.light-theme .sa-btn.secondary,
+.light-theme .sb-export-btn { color: #0f172a !important; }
+
+/* Navbar */
+.light-theme nav a { color: #0f172a !important; }
+
+/* Skeleton in light mode */
+.light-theme .skeleton {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.04) 75%);
+  background-size: 200% 100%;
+}
+
+/* Recharts tooltips */
+.light-theme .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #ffffff !important;
+  border-color: rgba(2,132,199,0.2) !important;
+  color: #0f172a !important;
+}

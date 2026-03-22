@@ -36,6 +36,9 @@ const ProfilePage = () => {
         bio: "Loading profile...",
         avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
         skills: [],
+        github_link: '',
+        linkedin_link: '',
+        twitter_link: '',
         stats: {
             solved: 0,
             rank: 0,
@@ -77,6 +80,9 @@ const ProfilePage = () => {
                     bio: currentStats.bio || "No bio yet. Edit your profile to add one!",
                     avatar: currentStats.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentStats.username}`,
                     skills: currentStats.skills || [],
+                    github_link: currentStats.github_link || '',
+                    linkedin_link: currentStats.linkedin_link || '',
+                    twitter_link: currentStats.twitter_link || '',
                     stats: {
                         solved: currentStats.problemsSolved,
                         rank: currentStats.rank,
@@ -175,9 +181,9 @@ const ProfilePage = () => {
                 bio: tempUser.bio,
                 skills: formattedSkills,
                 avatar: tempUser.avatar,
-                github_link: '', // Add mapping if tempUser has these fields
-                linkedin_link: '',
-                twitter_link: ''
+                github_link: tempUser.github_link || '',
+                linkedin_link: tempUser.linkedin_link || '',
+                twitter_link: tempUser.twitter_link || ''
             });
 
             const updatedUser = {
@@ -254,6 +260,27 @@ const ProfilePage = () => {
                                                 value={tempUser.bio}
                                                 onChange={e => setTempUser({ ...tempUser, bio: e.target.value })}
                                             />
+                                            <input
+                                                type="url"
+                                                className="edit-input"
+                                                placeholder="GitHub URL"
+                                                value={tempUser.github_link || ''}
+                                                onChange={e => setTempUser({ ...tempUser, github_link: e.target.value })}
+                                            />
+                                            <input
+                                                type="url"
+                                                className="edit-input"
+                                                placeholder="LinkedIn URL"
+                                                value={tempUser.linkedin_link || ''}
+                                                onChange={e => setTempUser({ ...tempUser, linkedin_link: e.target.value })}
+                                            />
+                                            <input
+                                                type="url"
+                                                className="edit-input"
+                                                placeholder="Twitter / X URL"
+                                                value={tempUser.twitter_link || ''}
+                                                onChange={e => setTempUser({ ...tempUser, twitter_link: e.target.value })}
+                                            />
                                             <div className="edit-actions">
                                                 <button className="icon-btn-small success magnetic-hover" onClick={handleSaveProfile}><Check size={18} /></button>
                                                 <button className="icon-btn-small danger magnetic-hover" onClick={handleCancelProfile}><X size={18} /></button>
@@ -266,9 +293,18 @@ const ProfilePage = () => {
                                             <p className="user-bio">{user.bio}</p>
 
                                             <div className="social-links">
-                                                <button className="social-btn magnetic-hover">GitHub</button>
-                                                <button className="social-btn magnetic-hover">LinkedIn</button>
-                                                <button className="social-btn magnetic-hover">Twitter</button>
+                                                {user.github_link
+                                                    ? <a href={user.github_link} target="_blank" rel="noopener noreferrer" className="social-btn magnetic-hover">GitHub</a>
+                                                    : isOwnProfile && <button className="social-btn magnetic-hover" onClick={() => { setTempUser({...user}); setIsEditingProfile(true); }}>+ GitHub</button>
+                                                }
+                                                {user.linkedin_link
+                                                    ? <a href={user.linkedin_link} target="_blank" rel="noopener noreferrer" className="social-btn magnetic-hover">LinkedIn</a>
+                                                    : isOwnProfile && <button className="social-btn magnetic-hover" onClick={() => { setTempUser({...user}); setIsEditingProfile(true); }}>+ LinkedIn</button>
+                                                }
+                                                {user.twitter_link
+                                                    ? <a href={user.twitter_link} target="_blank" rel="noopener noreferrer" className="social-btn magnetic-hover">Twitter / X</a>
+                                                    : isOwnProfile && <button className="social-btn magnetic-hover" onClick={() => { setTempUser({...user}); setIsEditingProfile(true); }}>+ Twitter</button>
+                                                }
                                             </div>
 
                                             <button
