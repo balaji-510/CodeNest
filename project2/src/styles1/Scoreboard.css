@@ -249,3 +249,84 @@
   white-space: nowrap;
 }
 .sb-export-btn:hover { opacity: 0.85; }
+
+/* ── Light Theme Overrides ──────────────────────────────────────────────── */
+.light-theme .sb-search,
+.light-theme .sb-filter {
+  background: #ffffff;
+  border-color: rgba(2, 132, 199, 0.2);
+  color: #0f172a;
+}
+.light-theme .sb-search:focus { border-color: #0284c7; }
+.light-theme .sb-search::placeholder { color: #94a3b8; }
+
+.light-theme .sb-count { color: #64748b; }
+
+.light-theme .sb-formula { color: #64748b; }
+
+.light-theme .sb-table-wrap {
+  border-color: rgba(2, 132, 199, 0.15);
+  scrollbar-color: rgba(2, 132, 199, 0.2) transparent;
+}
+.light-theme .sb-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(2, 132, 199, 0.2);
+}
+
+.light-theme .sb-header-main th,
+.light-theme .sb-header-sub th {
+  background: #f8fafc;
+  color: #475569;
+  border-bottom-color: rgba(2, 132, 199, 0.12);
+}
+.light-theme .sb-header-main th:hover,
+.light-theme .sb-header-sub th:hover { color: #0f172a; }
+
+.light-theme .sb-platform-header {
+  border-left-color: rgba(2, 132, 199, 0.1);
+}
+
+.light-theme .sticky-col,
+.light-theme .sticky-col2 {
+  background: #f8fafc;
+}
+
+.light-theme .sb-row {
+  border-bottom-color: rgba(2, 132, 199, 0.08);
+}
+.light-theme .sb-row:hover { background: rgba(2, 132, 199, 0.04); }
+.light-theme .sb-row:hover .sticky-col,
+.light-theme .sb-row:hover .sticky-col2 { background: #eff6ff; }
+
+.light-theme .sb-top1 { background: rgba(255, 215, 0, 0.06); }
+.light-theme .sb-top2 { background: rgba(148, 163, 184, 0.06); }
+.light-theme .sb-top3 { background: rgba(180, 120, 60, 0.06); }
+
+.light-theme .sb-cell { color: #0f172a; }
+.light-theme .sb-student-meta { color: #64748b; }
+.light-theme .sb-no-handle { color: #94a3b8; }
+.light-theme .sb-empty { color: #64748b; }
+
+.light-theme .sb-sort-icon { opacity: 0.4; }
+.light-theme .sb-sort-icon.active { color: #0284c7; opacity: 1; }
+
+/* Pagination buttons */
+.light-theme .sb-pagination { color: #64748b; }
+.light-theme .sb-pagination button {
+  background: #ffffff;
+  border-color: rgba(2, 132, 199, 0.2);
+  color: #0f172a;
+}
+.light-theme .sb-pagination button:hover:not(:disabled) {
+  border-color: #0284c7;
+  color: #0284c7;
+}
+.light-theme .sb-pagination button:disabled { opacity: 0.4; }
+
+/* Export button */
+.light-theme .sb-export-btn {
+  background: #0284c7;
+  color: #ffffff;
+}
+.light-theme .sb-export-btn:hover { opacity: 0.9; }
+
+.light-theme .sb-loading-full { color: #64748b; }

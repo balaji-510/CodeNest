@@ -396,3 +396,51 @@ ul {
   border-color: rgba(2,132,199,0.2) !important;
   color: #0f172a !important;
 }
+
+/* Global select fix in light mode */
+.light-theme select {
+  color: #0f172a;
+}
+.light-theme select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Global input/textarea fix */
+.light-theme input:not([type="submit"]):not([type="button"]):not([type="range"]),
+.light-theme textarea {
+  color: #0f172a;
+}
+.light-theme input::placeholder,
+.light-theme textarea::placeholder {
+  color: #64748b;
+}
+
+/* Recharts axis text */
+.light-theme .recharts-cartesian-axis-tick-value,
+.light-theme .recharts-legend-item-text {
+  fill: #475569 !important;
+  color: #475569 !important;
+}
+
+/* Page backgrounds that use hardcoded dark gradients */
+.light-theme .profile-container {
+  background: radial-gradient(circle at 0% 0%, rgba(2,132,199,0.04) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(79,70,229,0.04) 0%, transparent 40%);
+}
+
+/* Stat progress bar in light mode */
+.light-theme .stat-progress-bar {
+  background: rgba(2,132,199,0.1);
+}
+
+/* Account input in light mode */
+.light-theme .account-input {
+  background: #f1f5f9;
+  border-color: rgba(2,132,199,0.2);
+  color: #0f172a;
+}
+.light-theme .account-input:focus {
+  border-color: #0284c7;
+  background: #ffffff;
+}

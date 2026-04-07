@@ -115,12 +115,17 @@
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--glass-border, rgba(255,255,255,0.1));
   border-radius: 10px;
-  padding: 0.55rem 1rem;
+  padding: 0.55rem 2.2rem 0.55rem 1rem;
   color: var(--text-primary, #f1f5f9);
   font-size: 0.88rem;
   outline: none;
   cursor: pointer;
   transition: border-color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
 }
 .filter-select:focus { border-color: #38bdf8; }
 .filter-select option { background: #1e293b; }
@@ -520,3 +525,106 @@
   .filter-group { min-width: unset; }
   .submissions-summary { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .submissions-page {
+    background: var(--bg-color);
+}
+
+.light-theme .summary-stat {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+.light-theme .summary-stat .s-label { color: #475569; }
+.light-theme .summary-stat .s-value { color: #0f172a; }
+
+.light-theme .filters-container {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+
+.light-theme .search-input {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .search-input::placeholder { color: #64748b; }
+.light-theme .search-input:focus { border-color: #0284c7; }
+
+.light-theme .filter-select {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+    /* Remove the stacked chevron — use a clean one */
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    padding-right: 2.2rem;
+}
+.light-theme .filter-select:focus { border-color: #0284c7; }
+.light-theme .filter-select option { background: #ffffff; color: #0f172a; }
+
+.light-theme .filter-group { color: #475569; }
+
+.light-theme .submission-card {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.1);
+}
+.light-theme .submission-card:hover {
+    border-color: rgba(2, 132, 199, 0.3);
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.08);
+}
+.light-theme .problem-title { color: #0f172a; }
+.light-theme .problem-title:hover { color: #0284c7; }
+.light-theme .meta-item { color: #475569; }
+
+.light-theme .btn-secondary {
+    background: #f1f5f9;
+    color: #334155;
+    border-color: rgba(2, 132, 199, 0.2);
+}
+.light-theme .btn-secondary:hover {
+    border-color: #0284c7;
+    background: rgba(2, 132, 199, 0.06);
+    color: #0284c7;
+}
+
+.light-theme .empty-state {
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #475569;
+}
+.light-theme .empty-state h2 { color: #0f172a; }
+
+.light-theme .submission-modal {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.15);
+}
+.light-theme .modal-header { background: rgba(2, 132, 199, 0.03); }
+.light-theme .modal-header h2 { color: #0f172a; }
+.light-theme .modal-footer { background: rgba(2, 132, 199, 0.03); }
+.light-theme .detail-row {
+    background: rgba(2, 132, 199, 0.04);
+    border-color: rgba(2, 132, 199, 0.1);
+}
+.light-theme .detail-label { color: #475569; }
+.light-theme .code-block {
+    background: #f8fafc;
+    border-color: rgba(2, 132, 199, 0.12);
+    color: #1e293b;
+}
+.light-theme .code-section h3,
+.light-theme .test-results-section h3 { color: #475569; }
+.light-theme .test-detail { color: #475569; }
+.light-theme .test-detail strong { color: #0f172a; }
+.light-theme .test-detail pre {
+    background: #f1f5f9;
+    color: #334155;
+}
+.light-theme .close-btn {
+    background: rgba(2, 132, 199, 0.06);
+    border-color: rgba(2, 132, 199, 0.15);
+    color: #475569;
+}
+.light-theme .close-btn:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }

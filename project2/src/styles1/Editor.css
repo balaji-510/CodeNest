@@ -1056,3 +1056,75 @@
 .problem-submissions-list {
     padding: 0 4px;
 }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .problem-description {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+
+.light-theme .editor-controls {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(2, 132, 199, 0.12);
+}
+
+.light-theme .editor-controls select {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: rgba(2, 132, 199, 0.2);
+}
+
+.light-theme .output-terminal {
+    background: #ffffff;
+}
+
+.light-theme .terminal-header {
+    background: rgba(2, 132, 199, 0.04);
+    border-color: rgba(2, 132, 199, 0.12);
+    color: #0f172a;
+}
+
+.light-theme .input-section {
+    background: rgba(2, 132, 199, 0.02);
+    border-color: rgba(2, 132, 199, 0.1);
+}
+
+.light-theme .input-tabs {
+    background: rgba(2, 132, 199, 0.04);
+    border-color: rgba(2, 132, 199, 0.1);
+}
+
+.light-theme .tab-btn { color: #475569; }
+.light-theme .tab-btn:hover { background: rgba(2, 132, 199, 0.05); color: #0f172a; }
+.light-theme .tab-btn.active { color: #0284c7; border-bottom-color: #0284c7; background: rgba(2, 132, 199, 0.08); }
+
+.light-theme .testcase-display {
+    background: #f8fafc;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+
+.light-theme .testcase-btn {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #334155;
+}
+.light-theme .testcase-btn:hover { background: rgba(2, 132, 199, 0.08); }
+
+.light-theme .custom-input-textarea {
+    background: #f8fafc;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .custom-input-textarea:focus { border-color: #0284c7; background: #ffffff; }
+
+.light-theme .example-box {
+    background: rgba(2, 132, 199, 0.03);
+    border-color: rgba(2, 132, 199, 0.12);
+}
+.light-theme .example-box pre {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.light-theme .resize-handle { background: rgba(2, 132, 199, 0.15); }
+.light-theme .resize-handle:hover { background: #0284c7; }

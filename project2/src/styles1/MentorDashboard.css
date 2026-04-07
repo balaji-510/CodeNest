@@ -483,3 +483,56 @@
     color: var(--primary-color, #38bdf8);
     border-bottom-color: var(--primary-color, #38bdf8);
 }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .table-search,
+.light-theme .branch-filter {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .branch-filter option { background: #ffffff; color: #0f172a; }
+
+.light-theme .student-table th {
+    color: #475569;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+.light-theme .student-table td {
+    color: #0f172a;
+    border-color: rgba(2, 132, 199, 0.06);
+}
+.light-theme .student-table tbody tr:hover { background: rgba(2, 132, 199, 0.04); }
+
+.light-theme .form-group input,
+.light-theme .form-group select {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .form-group label { color: #475569; }
+
+.light-theme .button.secondary {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: rgba(2, 132, 199, 0.2);
+}
+
+.light-theme .risk-item {
+    background: rgba(2, 132, 199, 0.03);
+    border-color: rgba(2, 132, 199, 0.08);
+}
+.light-theme .risk-info p { color: #0f172a; }
+
+.light-theme .mentor-tab { color: #475569; }
+.light-theme .mentor-tab:hover { color: #0f172a; }
+.light-theme .mentor-tab.active { color: #0284c7; border-bottom-color: #0284c7; }
+
+/* Radar chart light mode */
+.light-theme .recharts-polar-grid-angle line,
+.light-theme .recharts-polar-grid-concentric path {
+    stroke: rgba(2, 132, 199, 0.2) !important;
+}
+.light-theme .recharts-radar-polygon {
+    stroke: #0284c7 !important;
+    fill: rgba(2, 132, 199, 0.25) !important;
+}

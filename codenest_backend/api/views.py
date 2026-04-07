@@ -1,3 +1,4 @@
+import os
 from rest_framework import viewsets, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
@@ -31,6 +32,9 @@ class RegisterView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         from django.core.cache import cache
+        import logging
+        logger = logging.getLogger(__name__)
+        
         email = request.data.get('email', '').strip().lower()
         verified = cache.get(f"otp_verified_{email}")
         if not verified:
@@ -38,10 +42,19 @@ class RegisterView(generics.CreateAPIView):
                 {"error": "Email not verified. Please complete OTP verification first."},
                 status=400
             )
-        response = super().create(request, *args, **kwargs)
-        # Clear the verified flag after successful registration
-        cache.delete(f"otp_verified_{email}")
-        return response
+        
+        # Log the incoming data for debugging
+        logger.info(f"Registration data: {request.data}")
+        
+        try:
+            response = super().create(request, *args, **kwargs)
+            # Clear the verified flag after successful registration
+            cache.delete(f"otp_verified_{email}")
+            return response
+        except Exception as e:
+            logger.error(f"Registration failed: {str(e)}")
+            logger.error(f"Request data: {request.data}")
+            raise
 
 class ProblemViewSet(viewsets.ModelViewSet):
     queryset = Problem.objects.all()
@@ -166,8 +179,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
                 testcases=test_data
             )
         else:
-            # Fallback: Execute with Piston for each test case
-            logger.info("Docker not available, using Piston for submission")
+            # Fallback: Execute locally using subprocess for each test case
+            logger.info("Docker not available, using local subprocess for submission")
             from .compiler import execute_code_piston
             
             results = []
@@ -496,6 +509,7 @@ def _get_user_dashboard_stats_data(user):
         skills_list = [s.strip() for s in profile.skills.split(',') if s.strip()]
 
     data = {
+        "user_id": user.id,
         "username": user.username,
         "full_name": f"{user.first_name} {user.last_name}".strip() or user.username,
         "email": user.email,
@@ -510,6 +524,13 @@ def _get_user_dashboard_stats_data(user):
         "github_link": profile.github_link,
         "linkedin_link": profile.linkedin_link,
         "twitter_link": profile.twitter_link,
+
+        # Student Info
+        "branch": profile.branch,
+        "batch": profile.batch,
+        "roll_number": getattr(profile, 'roll_number', ''),
+        "gender": profile.gender,
+        "role": profile.role,
         
         "leetcode_handle": profile.leetcode_handle,
         "is_leetcode_verified": profile.is_leetcode_verified,
@@ -522,6 +543,7 @@ def _get_user_dashboard_stats_data(user):
         
         # Real problems solved count
         "problemsSolved": problems_solved,
+        "score": correct_score,
         
         "recentSubmissions": [
             {
@@ -775,46 +797,110 @@ def verify_codeforces_account(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def verify_codechef_account(request):
-    # CodeChef has no public API for bio. We will rely on trusted input for now 
-    # OR try to scrape if possible. For safety/stability, let's allow "Manual" verification 
-    # effectively by just saving the handle if they confirm they added it (honor system) 
-    # OR we can try to fetch the profile page.
+    """
+    Verify CodeChef account ownership by checking if the user has added
+    their verification token to their CodeChef profile name or bio.
     
+    Since CodeChef doesn't have a public API, we scrape the profile page.
+    """
     handle = request.data.get('handle')
     if not handle:
         return Response({"error": "Handle is required"}, status=400)
         
     profile, created = UserProfile.objects.get_or_create(user=request.user)
     
-    # Simulating verification for CodeChef to avoid complex scraping
-    # In a real production app, we'd use a backend worker with Selenium or authorized API.
-    # For this project, we'll verify if the user simply exists.
+    # Get or generate verification token
+    if not profile.verification_token:
+        import uuid
+        profile.verification_token = f"CN-{str(uuid.uuid4())[:8]}"
+        profile.save()
+    
+    verification_token = profile.verification_token
     
     try:
         import requests
+        from bs4 import BeautifulSoup
     except ImportError:
-        return Response({"error": "Server configuration error: 'requests' library is missing."}, status=503)
+        return Response({
+            "error": "Server configuration error: Required libraries missing.",
+            "details": "Please install 'requests' and 'beautifulsoup4'"
+        }, status=503)
 
     try:
-        # Check if user profile exists
-        response = requests.get(f"https://www.codechef.com/users/{handle}", timeout=10)
+        # Fetch CodeChef profile page
+        response = requests.get(
+            f"https://www.codechef.com/users/{handle}",
+            timeout=10,
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
+        
+        if response.status_code == 404:
+            return Response({
+                "error": "User not found on CodeChef",
+                "handle": handle
+            }, status=404)
+        
         if response.status_code != 200:
-             return Response({"error": "User not found on CodeChef"}, status=404)
+            return Response({
+                "error": f"Failed to fetch CodeChef profile (HTTP {response.status_code})",
+                "details": "CodeChef might be temporarily unavailable"
+            }, status=503)
         
-        # We can't easily check bio without parsing HTML and handling dynamic content.
-        # We will assume verified if they click verify (Honor System for CodeChef)
-        # OR we can ask them to change their Name temporarily if we parsed HTML.
+        # Parse the profile page
+        soup = BeautifulSoup(response.text, 'html.parser')
         
-        profile.codechef_handle = handle
-        profile.is_codechef_verified = True
-        profile.save()
+        # Check multiple places where the token might be:
+        # 1. Full name field
+        # 2. Bio/About section
+        # 3. Any text content on the page
         
-        return Response({"success": True, "message": "CodeChef handle linked successfully!"})
+        page_text = soup.get_text().lower()
+        token_lower = verification_token.lower()
         
+        if token_lower in page_text:
+            # Token found - verify the account
+            profile.codechef_handle = handle
+            profile.is_codechef_verified = True
+            profile.save()
+            
+            return Response({
+                "success": True,
+                "message": f"CodeChef account '{handle}' verified successfully!",
+                "handle": handle
+            })
+        else:
+            # Token not found
+            return Response({
+                "error": "Verification token not found",
+                "message": f"Please add '{verification_token}' to your CodeChef profile name or bio, then try again.",
+                "token": verification_token,
+                "instructions": [
+                    f"1. Go to https://www.codechef.com/users/{handle}",
+                    "2. Click 'Edit Profile'",
+                    f"3. Add '{verification_token}' to your Full Name or Bio",
+                    "4. Save changes",
+                    "5. Come back here and click 'Verify' again"
+                ]
+            }, status=400)
+        
+    except requests.exceptions.Timeout:
+        return Response({
+            "error": "Request timeout",
+            "details": "CodeChef is taking too long to respond. Please try again."
+        }, status=504)
     except requests.exceptions.RequestException as e:
-        return Response({"error": f"Network error connecting to CodeChef: {str(e)}"}, status=503)
+        return Response({
+            "error": "Network error",
+            "details": f"Could not connect to CodeChef: {str(e)}"
+        }, status=503)
     except Exception as e:
-        return Response({"error": str(e)}, status=500)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"CodeChef verification error: {str(e)}")
+        return Response({
+            "error": "Verification failed",
+            "details": str(e)
+        }, status=500)
 
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
@@ -971,20 +1057,19 @@ def execute_code(request):
             logger.info(f"Docker execution result: is_error={result.get('is_error')}, has_output={bool(result.get('stdout') or result.get('stderr'))}")
             
             if result.get('is_error') and 'error' in result:
-                # Docker execution failed, try Piston as fallback
-                logger.warning(f"Docker execution failed: {result.get('error')}, falling back to Piston")
+                # Docker execution failed, try local subprocess fallback
+                logger.warning(f"Docker execution failed: {result.get('error')}, falling back to local executor")
                 from .compiler import execute_code_piston
                 piston_result = execute_code_piston(normalized_lang, code, stdin)
                 
                 if "error" in piston_result:
-                    logger.error(f"Piston also failed: {piston_result.get('error')}")
+                    logger.error(f"Local executor also failed: {piston_result.get('error')}")
                     return Response(piston_result, status=500)
                 
-                # Sanitize and return Piston result
                 if "stdout" in piston_result and piston_result["stdout"]:
                     piston_result["stdout"] = escape(piston_result["stdout"])
                 
-                logger.info("Piston fallback successful")
+                logger.info("Local executor fallback successful")
                 return Response(piston_result)
             
             # Docker execution successful
@@ -1007,20 +1092,19 @@ def execute_code(request):
             logger.info("Returning Docker execution result")
             return Response(response_data)
         else:
-            # Docker not available, use Piston
-            logger.info("Docker not available, using Piston API")
+            # Docker not available, use local subprocess executor
+            logger.info("Docker not available, using local subprocess executor")
             from .compiler import execute_code_piston
             result = execute_code_piston(normalized_lang, code, stdin)
             
             if "error" in result:
-                logger.error(f"Piston execution failed: {result.get('error')}")
+                logger.error(f"Local execution failed: {result.get('error')}")
                 return Response(result, status=500)
                  
-            # Sanitize stdout
             if "stdout" in result and result["stdout"]:
                 result["stdout"] = escape(result["stdout"])
             
-            logger.info("Piston execution successful")
+            logger.info("Local execution successful")
             return Response(result)
             
     except ImportError as e:
@@ -1176,7 +1260,6 @@ def get_mentor_stats(request):
         data = {
             "stats": [
                 { "label": "Total Students", "value": str(total_students), "trend": "+0 new", "icon": "👥" },
-                { "label": "Avg. Accuracy", "value": f"{int(avg_accuracy)}%", "trend": "~0%", "icon": "🎯" },
                 { "label": "Active Today", "value": str(active_count), "trend": "Normal", "icon": "🔥" },
                 { "label": "Total Submissions", "value": str(total_submissions), "trend": "+0", "icon": "📝" },
             ],
@@ -2729,37 +2812,12 @@ def send_otp(request):
         f"— The CodeNest Team"
     )
 
-    # Use Brevo HTTP API — SMTP ports are blocked on Railway free tier
-    brevo_api_key = os.environ.get('BREVO_API_KEY', '')
-    if brevo_api_key:
-        try:
-            import requests as http_requests
-            resp = http_requests.post(
-                'https://api.brevo.com/v3/smtp/email',
-                headers={
-                    'api-key': brevo_api_key,
-                    'Content-Type': 'application/json',
-                },
-                json={
-                    'sender': {'name': 'CodeNest', 'email': os.environ.get('EMAIL_HOST_USER', 'a5a442001@smtp-brevo.com')},
-                    'to': [{'email': email}],
-                    'subject': subject,
-                    'textContent': message,
-                },
-                timeout=15
-            )
-            if resp.status_code not in (200, 201, 202):
-                logger.error(f"Brevo API error: {resp.status_code} {resp.text}")
-                return Response({"error": "Failed to send email. Please try again."}, status=500)
-        except Exception as e:
-            logger.error(f"Brevo HTTP error: {e}", exc_info=True)
-            return Response({"error": "Failed to send email. Please try again."}, status=500)
-    else:
-        try:
-            send_mail(subject, message, None, [email], fail_silently=False)
-        except Exception as e:
-            logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
-            return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
+    # Send via Gmail SMTP (configured in .env)
+    try:
+        send_mail(subject, message, None, [email], fail_silently=False)
+    except Exception as e:
+        logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
+        return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
 
     return Response({"message": "OTP sent successfully."})
 

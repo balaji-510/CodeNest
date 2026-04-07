@@ -21,7 +21,9 @@ function AuthLogin() {
     password: "",
     teacherCode: "",
     branch: "CSE",
+    batch: "2025",
     gender: "",
+    roll_number: "",
   });
 
   function handleChange(e) {
@@ -98,14 +100,16 @@ function AuthLogin() {
         role: selectedRole,
         teacher_code: selectedRole === "teacher" ? formData.teacherCode : "",
         branch: selectedRole === "student" ? formData.branch : "CSE",
-        gender: formData.gender,
+        batch: selectedRole === "student" ? formData.batch : "2024",
+        gender: formData.gender || "",
+        roll_number: selectedRole === "student" ? formData.roll_number : "",
       };
 
       await register(registerData);
       setInfo("Account created! Please log in.");
       setSignupStep("form");
       setIsLoggedIn(true);
-      setFormData({ firstname: "", lastname: "", username: "", email: "", password: "", teacherCode: "", branch: "CSE", gender: "" });
+      setFormData({ firstname: "", lastname: "", username: "", email: "", password: "", teacherCode: "", branch: "CSE", batch: "2025", gender: "", roll_number: "" });
       setOtpValue("");
     } catch (err) {
       if (err.response?.data) {
@@ -202,30 +206,54 @@ function AuthLogin() {
           {/* SIGNUP STEP 1: fill form + send OTP */}
           {!isLoggedIn && signupStep === "form" && (
             <form onSubmit={handleSendOtp}>
-              <input type="text" placeholder="First Name" className="input" name="firstname" onChange={handleChange} value={formData.firstname} required />
-              <input type="text" placeholder="Last Name" className="input" name="lastname" onChange={handleChange} value={formData.lastname} required />
+              <div className="input-row">
+                <input type="text" placeholder="First Name" className="input" name="firstname" onChange={handleChange} value={formData.firstname} required />
+                <input type="text" placeholder="Last Name" className="input" name="lastname" onChange={handleChange} value={formData.lastname} required />
+              </div>
               <input type="text" placeholder="Username" name="username" className="input" onChange={handleChange} value={formData.username} required />
               <input type="email" placeholder="Email" name="email" className="input" onChange={handleChange} value={formData.email} required />
               <input type="password" placeholder="Password" name="password" className="input" onChange={handleChange} value={formData.password} required />
+
               {selectedRole === "teacher" && (
                 <input type="password" placeholder="Teacher Registration Code" name="teacherCode" className="input" onChange={handleChange} value={formData.teacherCode} required />
               )}
+
               {selectedRole === "student" && (
-                <select name="branch" className="input" onChange={handleChange} value={formData.branch} required>
-                  <option value="CSE">CSE</option>
-                  <option value="CSM">CSM</option>
-                  <option value="CSD">CSD</option>
-                  <option value="ECE">ECE</option>
-                  <option value="MECH">MECH</option>
-                  <option value="CIVIL">CIVIL</option>
-                </select>
+                <>
+                  <div className="input-row">
+                    <select name="branch" className="input" onChange={handleChange} value={formData.branch} required>
+                      <option value="" disabled>Department</option>
+                      <option value="CSE">CSE</option>
+                      <option value="CSM">CSM</option>
+                      <option value="CSD">CSD</option>
+                      <option value="IT">IT</option>
+                      <option value="ECE">ECE</option>
+                      <option value="EEE">EEE</option>
+                      <option value="MECH">MECH</option>
+                      <option value="CIVIL">CIVIL</option>
+                    </select>
+                    <select name="batch" className="input" onChange={handleChange} value={formData.batch} required>
+                      <option value="" disabled>Batch Year</option>
+                      <option value="2022">2022</option>
+                      <option value="2023">2023</option>
+                      <option value="2024">2024</option>
+                      <option value="2025">2025</option>
+                      <option value="2026">2026</option>
+                      <option value="2027">2027</option>
+                      <option value="2028">2028</option>
+                    </select>
+                  </div>
+                  <input type="text" placeholder="Roll Number (e.g. 22A91A0501)" className="input" name="roll_number" onChange={handleChange} value={formData.roll_number} required />
+                </>
               )}
+
               <select name="gender" className="input" onChange={handleChange} value={formData.gender} required>
                 <option value="" disabled>Select Gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
+
               <button type="submit" disabled={otpLoading}>
                 {otpLoading ? "Sending OTP..." : "Send Verification OTP"}
               </button>

@@ -36,12 +36,13 @@ class UserSerializer(serializers.ModelSerializer):
     teacher_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     branch = serializers.CharField(write_only=True, required=False, default='CSE')
     batch = serializers.CharField(write_only=True, required=False, default='2024')
+    roll_number = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     gender = serializers.CharField(write_only=True, required=False, default='')
     email = serializers.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'role', 'teacher_code', 'branch', 'batch', 'gender']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'role', 'teacher_code', 'branch', 'batch', 'roll_number', 'gender']
     
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -61,8 +62,18 @@ class UserSerializer(serializers.ModelSerializer):
         role = validated_data.pop('role', 'student')
         branch = validated_data.pop('branch', 'CSE')
         batch = validated_data.pop('batch', '2024')
+        roll_number = validated_data.pop('roll_number', '')
         gender = validated_data.pop('gender', '')
-        validated_data.pop('teacher_code', None) # Remove teacher_code before creating user
+        validated_data.pop('teacher_code', None)
+        
+        # For teachers, set default values for student-specific fields if empty
+        if role == 'teacher':
+            if not branch or branch == '':
+                branch = 'CSE'
+            if not batch or batch == '':
+                batch = '2024'
+            if not roll_number:
+                roll_number = ''
         
         user = User.objects.create_user(
             username=validated_data['username'],
@@ -72,8 +83,7 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name', '')
         )
         
-        # Create UserProfile with the role, branch, and gender
-        UserProfile.objects.create(user=user, role=role, branch=branch, batch=batch, gender=gender)
+        UserProfile.objects.create(user=user, role=role, branch=branch, batch=batch, roll_number=roll_number, gender=gender)
         
         # Create UserStats for the new user
         from .models import UserStats

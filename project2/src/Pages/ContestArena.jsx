@@ -19,6 +19,7 @@ function ContestArena() {
     const [problemStatus, setProblemStatus] = useState({});
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [leaderboard, setLeaderboard] = useState([]);
+    const [problemTestCases, setProblemTestCases] = useState([]);
     const userId = localStorage.getItem('user_id');
 
     useEffect(() => {
@@ -68,6 +69,26 @@ function ContestArena() {
             setCode(starterCode[language] || '');
         }
     }, [selectedProblem, language]);
+
+    // Fetch visible test cases for the selected problem (for examples display)
+    useEffect(() => {
+        if (!selectedProblem) return;
+        const fetchTestCases = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                const res = await fetch(`http://localhost:8000/api/problems/${selectedProblem.id}/testcases/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setProblemTestCases(data.filter(tc => !tc.is_hidden));
+                }
+            } catch (e) {
+                console.error('Failed to fetch test cases', e);
+            }
+        };
+        fetchTestCases();
+    }, [selectedProblem?.id]);
 
     const fetchContestData = async () => {
         try {
@@ -288,7 +309,43 @@ function ContestArena() {
                                     </span>
                                 </div>
                                 <div className="problem-description">
-                                    <p>{selectedProblem.description}</p>
+                                    <p className="problem-desc-text">{selectedProblem.description}</p>
+
+                                    {problemTestCases.length > 0 && (
+                                        <>
+                                            <h4 className="problem-section-heading">Examples:</h4>
+                                            {problemTestCases.map((tc, i) => (
+                                                <div key={i} className="arena-example-box">
+                                                    <p className="example-label">Example {i + 1}:</p>
+                                                    <div className="example-row">
+                                                        <span className="example-key">Input:</span>
+                                                        <pre className="example-pre">{tc.input_data}</pre>
+                                                    </div>
+                                                    <div className="example-row">
+                                                        <span className="example-key">Output:</span>
+                                                        <pre className="example-pre">{tc.expected_output}</pre>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {(() => {
+                                        let constraints = [];
+                                        try {
+                                            const raw = selectedProblem.constraints;
+                                            constraints = typeof raw === 'string' ? JSON.parse(raw) : (raw || []);
+                                            if (typeof constraints === 'string') constraints = JSON.parse(constraints);
+                                        } catch (e) { constraints = []; }
+                                        return constraints.length > 0 ? (
+                                            <>
+                                                <h4 className="problem-section-heading">Constraints:</h4>
+                                                <ul className="arena-constraints-list">
+                                                    {constraints.map((c, i) => <li key={i}>{c}</li>)}
+                                                </ul>
+                                            </>
+                                        ) : null;
+                                    })()}
                                 </div>
                             </div>
 

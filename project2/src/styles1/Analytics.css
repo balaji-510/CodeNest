@@ -224,3 +224,38 @@
         font-size: 0.75rem;
     }
 }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .analytics-container {
+    background: radial-gradient(circle at 0% 0%, rgba(2, 132, 199, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(79, 70, 229, 0.04) 0%, transparent 40%);
+}
+
+.light-theme .stat-card {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.1);
+}
+.light-theme .stat-card .label { color: #475569; }
+.light-theme .stat-card .value { color: #0f172a; }
+
+.light-theme .topic-analytics,
+.light-theme .activity-chart-container {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.1);
+}
+.light-theme .topic-analytics h3,
+.light-theme .activity-chart-container h3 { color: #0f172a; }
+
+.light-theme .topic-info { color: #334155; }
+
+.light-theme .progress-container {
+    background: rgba(2, 132, 199, 0.08);
+}
+
+.light-theme .month-label { color: #475569; }
+
+.light-theme .tooltip {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: rgba(2, 132, 199, 0.2);
+}

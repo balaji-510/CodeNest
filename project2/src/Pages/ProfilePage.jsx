@@ -39,6 +39,11 @@ const ProfilePage = () => {
         github_link: '',
         linkedin_link: '',
         twitter_link: '',
+        branch: '',
+        batch: '',
+        roll_number: '',
+        gender: '',
+        role: 'student',
         stats: {
             solved: 0,
             rank: 0,
@@ -83,10 +88,15 @@ const ProfilePage = () => {
                     github_link: currentStats.github_link || '',
                     linkedin_link: currentStats.linkedin_link || '',
                     twitter_link: currentStats.twitter_link || '',
+                    branch: currentStats.branch || '',
+                    batch: currentStats.batch || '',
+                    roll_number: currentStats.roll_number || '',
+                    gender: currentStats.gender || '',
+                    role: currentStats.role || 'student',
                     stats: {
                         solved: currentStats.problemsSolved,
                         rank: currentStats.rank,
-                        points: currentStats.problemsSolved * 10 + currentStats.activeDays * 5,
+                        points: currentStats.score ?? (currentStats.problemsSolved * 10 + currentStats.activeDays * 5),
                         streak: currentStats.activeDays
                     },
                     recentActivity: (currentStats.recentSubmissions || []).map(sub => ({
@@ -135,7 +145,7 @@ const ProfilePage = () => {
                     userId = localStorage.getItem('user_id');
                 }
                 
-                const response = await fetch(`http://localhost:8000/api/achievements/?user_id=${userId}`, {
+                const response = await fetch(`http://localhost:8000/api/achievements/?user=${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -396,6 +406,39 @@ const ProfilePage = () => {
                                 </div>
                             )}
                         </div>
+
+                        {/* Student Info Card — visible to faculty or own profile */}
+                        {user.role === 'student' && (user.branch || user.batch || user.roll_number) && (
+                            <div className="glass-effect profile-card scroll-reveal" style={{ padding: '1.5rem' }}>
+                                <h3 className="card-title" style={{ marginBottom: '1rem' }}>Student Info</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.9rem' }}>
+                                    {user.roll_number && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Roll No.</span>
+                                            <span style={{ fontWeight: 600 }}>{user.roll_number}</span>
+                                        </div>
+                                    )}
+                                    {user.branch && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Department</span>
+                                            <span style={{ fontWeight: 600 }}>{user.branch}</span>
+                                        </div>
+                                    )}
+                                    {user.batch && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Batch</span>
+                                            <span style={{ fontWeight: 600 }}>{user.batch}</span>
+                                        </div>
+                                    )}
+                                    {user.gender && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Gender</span>
+                                            <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{user.gender}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </section>
 
                     {/* Right Column: Stats & Activity */}
