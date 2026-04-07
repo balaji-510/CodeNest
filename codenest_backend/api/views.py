@@ -2785,10 +2785,12 @@ def send_otp(request):
     """
     Send a 6-digit OTP to the provided email for signup verification.
     POST { "email": "user@example.com" }
+    
+    TEMPORARY: Email sending disabled for deployment testing.
+    Using fixed OTP: 123456
     """
     import random
     from django.core.cache import cache
-    from django.core.mail import send_mail
     from django.contrib.auth.models import User
 
     email = request.data.get('email', '').strip().lower()
@@ -2799,42 +2801,18 @@ def send_otp(request):
     if User.objects.filter(email__iexact=email).exists():
         return Response({"error": "An account with this email already exists."}, status=400)
 
-    otp = str(random.randint(100000, 999999))
+    # TEMPORARY: Use fixed OTP for testing (no email sent)
+    otp = "123456"  # Fixed OTP for deployment testing
     cache_key = f"otp_{email}"
     cache.set(cache_key, otp, timeout=600)  # 10 minutes
 
-    subject = "Your CodeNest Verification Code"
-    message = (
-        f"Hi,\n\n"
-        f"Your CodeNest email verification code is:\n\n"
-        f"  {otp}\n\n"
-        f"This code expires in 10 minutes. Do not share it with anyone.\n\n"
-        f"— The CodeNest Team"
-    )
+    logger.info(f"OTP for {email}: {otp} (Email sending disabled for deployment testing)")
 
-    # Send via Gmail SMTP (configured in .env)
-    try:
-        from django.core.mail import get_connection
-        
-        # Create connection with timeout
-        connection = get_connection(
-            backend='django.core.mail.backends.smtp.EmailBackend',
-            timeout=10  # 10 second timeout
-        )
-        
-        send_mail(
-            subject, 
-            message, 
-            None, 
-            [email], 
-            fail_silently=False,
-            connection=connection
-        )
-    except Exception as e:
-        logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
-        return Response({"error": "Failed to send email. Please try again or contact support."}, status=500)
-
-    return Response({"message": "OTP sent successfully."})
+    return Response({
+        "message": "OTP sent successfully. (Testing mode: Use OTP 123456)",
+        "testing_mode": True,
+        "otp": otp  # Include OTP in response for testing
+    })
 
 
 @api_view(['POST'])

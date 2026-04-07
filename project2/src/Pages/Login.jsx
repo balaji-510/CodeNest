@@ -54,7 +54,14 @@ function AuthLogin() {
         setError(data.error || "Failed to send OTP.");
         return;
       }
-      setInfo(`OTP sent to ${formData.email}. Check your inbox (or server console in dev).`);
+      
+      // Show OTP if in testing mode
+      if (data.testing_mode && data.otp) {
+        setInfo(`TESTING MODE: Use OTP ${data.otp} to verify your email.`);
+      } else {
+        setInfo(`OTP sent to ${formData.email}. Check your inbox.`);
+      }
+      
       setSignupStep("otp");
     } catch {
       setError("Network error. Please try again.");
