@@ -236,3 +236,59 @@
 .sa-form-row input:focus, .sa-form-row select:focus { border-color: var(--primary-color, #38bdf8); }
 .sa-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .sa-modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .sa-summary-card {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+.light-theme .sa-summary-card.inactive { border-color: rgba(244, 63, 94, 0.25); }
+.light-theme .sa-summary-card.risk     { border-color: rgba(251, 191, 36, 0.25); }
+.light-theme .sa-summary-card.checkpoints { border-color: rgba(2, 132, 199, 0.25); }
+
+.light-theme .sa-search,
+.light-theme .sa-filter {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .sa-filter option { background: #ffffff; color: #0f172a; }
+.light-theme .sa-search::placeholder { color: #64748b; }
+
+.light-theme .sa-table-section { border-color: rgba(2, 132, 199, 0.12); }
+.light-theme .sa-table thead th {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: rgba(2, 132, 199, 0.12);
+}
+.light-theme .sa-table tbody tr { border-color: rgba(2, 132, 199, 0.06); }
+.light-theme .sa-table tbody tr:hover { background: rgba(2, 132, 199, 0.04); }
+.light-theme .sa-table td { color: #0f172a; }
+.light-theme .sa-row-inactive { background: rgba(244, 63, 94, 0.04) !important; }
+
+.light-theme .sa-btn.secondary {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+
+.light-theme .sa-modal {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.15);
+}
+.light-theme .sa-form-row input,
+.light-theme .sa-form-row select {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .sa-form-row label { color: #475569; }
+
+.light-theme .sa-checkpoints {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+}
+.light-theme .sa-cp-card {
+    background: #f8fafc;
+    border: 1px solid rgba(2, 132, 199, 0.1);
+}

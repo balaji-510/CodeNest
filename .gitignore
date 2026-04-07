@@ -138,21 +138,8 @@ create_superuser.py
 create_db.py
 
 # ── Thesis / academic files (not part of the app) ────────────────────────
-docs/thesis-generation/
 *.docx
-codenest_comprehensive.docx
-generate_*.py
-add_lists_*.py
-replace_*.py
-thesis_*.py
 
 # ── Frontend debug files ──────────────────────────────────────────────────
 project2/public/debug-frontend.html
 project2/public/monaco-fix.css
-
-# ── Misc project files not needed in repo ────────────────────────────────
-PROJECT_STATUS.md
-FIXES_APPLIED.md
-FRONTEND_DEBUG_GUIDE.md
-NEXT_FEATURES_ROADMAP.md
-DEPLOYMENT_GUIDE.md

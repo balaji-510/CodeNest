@@ -7,8 +7,9 @@ class UserProfile(models.Model):
     accuracy = models.FloatField(default=0.0)
     active_days = models.IntegerField(default=0)
     role = models.CharField(max_length=20, default='student') # student or teacher
-    branch = models.CharField(max_length=20, default='CSE') # CSE, IT, ECE, MECH, etc.
-    batch = models.CharField(max_length=10, default='2024') # Graduation Year
+    branch = models.CharField(max_length=20, default='CSE', blank=True) # CSE, IT, ECE, MECH, etc.
+    batch = models.CharField(max_length=10, default='2024', blank=True) # Graduation Year
+    roll_number = models.CharField(max_length=20, blank=True, default='') # Student Roll Number
     bio = models.TextField(blank=True, default='')
     avatar = models.URLField(blank=True, default='https://api.dicebear.com/7.x/avataaars/svg?seed=Felix')
     skills = models.TextField(blank=True, default='') # Comma separated

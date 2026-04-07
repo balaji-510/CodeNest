@@ -582,3 +582,119 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Light Theme Overrides ──────────────────────────────────────────────── */
+.light-theme .achievements-page {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: #0f172a;
+}
+
+.light-theme .section-title p { color: #475569; }
+
+.light-theme .stat-card {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.light-theme .stat-card:hover {
+    box-shadow: 0 10px 30px rgba(2, 132, 199, 0.2);
+}
+.light-theme .stat-value { color: #0284c7; }
+.light-theme .stat-label { color: #475569; }
+
+.light-theme .filters-container {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+}
+
+.light-theme .search-input {
+    background: #f8fafc;
+    border-color: rgba(2, 132, 199, 0.25);
+    color: #0f172a;
+}
+.light-theme .search-input::placeholder { color: #94a3b8; }
+.light-theme .search-input:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+.light-theme .category-btn {
+    background: rgba(2, 132, 199, 0.05);
+    border-color: rgba(2, 132, 199, 0.25);
+    color: #475569;
+}
+.light-theme .category-btn:hover {
+    background: rgba(2, 132, 199, 0.1);
+    border-color: #0284c7;
+    color: #0284c7;
+}
+.light-theme .category-btn.active {
+    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+    color: white;
+}
+
+.light-theme .results-count { color: #475569; }
+
+.light-theme .achievement-card {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.light-theme .achievement-card:hover {
+    box-shadow: 0 10px 30px rgba(2, 132, 199, 0.2);
+}
+.light-theme .achievement-card.earned { border-color: rgba(2, 132, 199, 0.4); }
+
+.light-theme .achievement-icon {
+    background: rgba(2, 132, 199, 0.08);
+}
+.light-theme .lock-icon { color: #94a3b8; }
+
+.light-theme .achievement-info h3 { color: #0284c7; }
+.light-theme .achievement-info p { color: #475569; }
+
+.light-theme .progress-bar {
+    background: rgba(2, 132, 199, 0.1);
+}
+.light-theme .progress-text { color: #475569; }
+
+.light-theme .achievement-footer {
+    border-top-color: rgba(2, 132, 199, 0.15);
+}
+.light-theme .points-badge {
+    background: rgba(2, 132, 199, 0.1);
+    color: #0284c7;
+}
+.light-theme .earned-date { color: #64748b; }
+
+.light-theme .empty-state {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+}
+.light-theme .empty-state svg { color: #94a3b8; }
+.light-theme .empty-state h2 { color: #475569; }
+.light-theme .empty-state p { color: #64748b; }
+
+.light-theme .achievement-modal {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.15);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+.light-theme .close-btn {
+    background: rgba(2, 132, 199, 0.06);
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+}
+.light-theme .close-btn:hover {
+    background: rgba(2, 132, 199, 0.12);
+    border-color: #0284c7;
+}
+.light-theme .achievement-modal h2 { color: #0284c7; }
+.light-theme .modal-description { color: #475569; }
+.light-theme .modal-stats {
+    background: rgba(2, 132, 199, 0.04);
+    border: 1px solid rgba(2, 132, 199, 0.1);
+}
+.light-theme .modal-stat-label { color: #64748b; }
+.light-theme .modal-stat-value { color: #0284c7; }
+.light-theme .modal-progress h3 { color: #475569; }

@@ -1,61 +1,102 @@
-import requests
-
-PISTON_API_URL = "https://emkc.org/api/v2/piston/execute"
+import subprocess
+import tempfile
+import os
+import time
+import re
 
 LANGUAGE_MAP = {
-    "python": {"language": "python", "version": "3.10.0"},
-    "javascript": {"language": "javascript", "version": "18.15.0"},
-    "java": {"language": "java", "version": "15.0.2"},
-    "cpp": {"language": "c++", "version": "10.2.0"},
+    "python":     {"ext": ".py",   "run": ["python", "{file}"],          "compile": None},
+    "javascript": {"ext": ".js",   "run": ["node", "{file}"],            "compile": None},
+    "java":       {"ext": ".java", "run": ["java", "{classname}"],       "compile": ["javac", "{file}"]},
+    "cpp":        {"ext": ".cpp",  "run": [".{sep}program"],             "compile": ["g++", "-o", "program", "{file}", "-std=c++17"]},
+    "c":          {"ext": ".c",    "run": [".{sep}program"],             "compile": ["gcc", "-o", "program", "{file}"]},
 }
+
+TIMEOUT = 10  # seconds
+
 
 def execute_code_piston(language, code, stdin=""):
     """
-    Executes code using the Piston API.
+    Execute code locally using subprocess (no external API needed).
+    Falls back gracefully if the runtime is not installed.
     """
     if language not in LANGUAGE_MAP:
         return {"error": f"Unsupported language: {language}"}
-        
+
     config = LANGUAGE_MAP[language]
-    
-    payload = {
-        "language": config["language"],
-        "version": config["version"],
-        "files": [
-            {
-                "content": code
-            }
-        ],
-        "stdin": stdin,
-        "run_timeout": 3000,
-        "compile_timeout": 10000
-    }
-    
+    sep = os.sep
+
     try:
-        response = requests.post(PISTON_API_URL, json=payload, timeout=15)
-        response.raise_for_status()
-        result = response.json()
-        
-        # Piston response format:
-        # {
-        #   "run": {
-        #     "stdout": "...",
-        #     "stderr": "...",
-        #     "output": "...",
-        #     "code": 0,
-        #     "signal": null
-        #   },
-        #   "language": "python",
-        #   "version": "3.10.0"
-        # }
-        
-        run_result = result.get("run", {})
-        return {
-            "output": run_result.get("output", ""),
-            "stdout": run_result.get("stdout", ""),
-            "stderr": run_result.get("stderr", ""),
-            "is_error": run_result.get("code", 0) != 0
-        }
-        
-    except requests.exceptions.RequestException as e:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Determine filename
+            if language == "java":
+                match = re.search(r'public\s+class\s+(\w+)', code)
+                classname = match.group(1) if match else "Solution"
+                filename = f"{classname}.java"
+            else:
+                filename = f"solution{config['ext']}"
+
+            filepath = os.path.join(tmpdir, filename)
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(code)
+
+            # Compile step
+            if config["compile"]:
+                compile_cmd = [
+                    part.format(file=filename, classname=classname if language == "java" else "")
+                    for part in config["compile"]
+                ]
+                comp = subprocess.run(
+                    compile_cmd,
+                    cwd=tmpdir,
+                    capture_output=True,
+                    text=True,
+                    timeout=TIMEOUT,
+                )
+                if comp.returncode != 0:
+                    return {
+                        "stdout": "",
+                        "stderr": comp.stderr,
+                        "output": comp.stderr,
+                        "is_error": True,
+                    }
+
+            # Run step
+            run_cmd = [
+                part.format(
+                    file=filename,
+                    classname=classname if language == "java" else "",
+                    sep=sep,
+                )
+                for part in config["run"]
+            ]
+
+            start = time.time()
+            proc = subprocess.run(
+                run_cmd,
+                cwd=tmpdir,
+                input=stdin,
+                capture_output=True,
+                text=True,
+                timeout=TIMEOUT,
+            )
+            elapsed = round(time.time() - start, 3)
+
+            is_error = proc.returncode != 0
+            output = proc.stdout if not is_error else proc.stderr
+
+            return {
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "output": output,
+                "is_error": is_error,
+                "execution_time": elapsed,
+            }
+
+    except subprocess.TimeoutExpired:
+        return {"stdout": "", "stderr": "Time limit exceeded", "output": "Time limit exceeded", "is_error": True}
+    except FileNotFoundError as e:
+        # Runtime not installed on this machine
+        return {"error": f"Runtime not found: {e}. Please install the required language runtime or start Docker."}
+    except Exception as e:
         return {"error": f"Execution failed: {str(e)}"}

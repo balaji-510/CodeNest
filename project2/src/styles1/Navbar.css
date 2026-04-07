@@ -192,3 +192,38 @@
     padding: 1rem 1.5rem;
   }
 }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .navbar {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(2, 132, 199, 0.1);
+}
+
+.light-theme .nav-icon-btn {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.15);
+    color: #334155;
+}
+.light-theme .nav-icon-btn:hover {
+    color: #0284c7;
+    border-color: #0284c7;
+}
+
+.light-theme .theme-toggle {
+    background: #f1f5f9;
+    border-color: rgba(2, 132, 199, 0.15);
+}
+
+.light-theme .dropdown-item {
+    color: #334155;
+}
+.light-theme .dropdown-item:hover {
+    background: rgba(2, 132, 199, 0.06);
+    color: #0284c7;
+}
+
+.light-theme .dropdown-menu {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+    box-shadow: 0 10px 40px rgba(2, 132, 199, 0.1);
+}

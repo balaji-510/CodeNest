@@ -513,3 +513,45 @@
     background: rgba(56, 189, 248, 0.05);
     border-color: rgba(56, 189, 248, 0.2);
 }
+
+/* ── Light Theme Fixes ──────────────────────────────────────────────────── */
+.light-theme .contest-detail-page {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: #0f172a;
+}
+
+.light-theme .info-item {
+    background: rgba(2, 132, 199, 0.05);
+}
+
+.light-theme .info-label { color: #475569; }
+.light-theme .info-value { color: #0f172a; }
+
+.light-theme .description { color: #334155; }
+.light-theme .rules-section p { color: #334155; }
+
+.light-theme .problem-item {
+    background: rgba(2, 132, 199, 0.04);
+}
+.light-theme .problem-item:hover {
+    background: rgba(2, 132, 199, 0.1);
+    border-color: rgba(2, 132, 199, 0.3);
+}
+.light-theme .problem-info h4 { color: #0f172a; }
+
+.light-theme .table-row {
+    background: rgba(2, 132, 199, 0.04);
+}
+.light-theme .table-row:hover {
+    background: rgba(2, 132, 199, 0.08);
+}
+.light-theme .table-row.current-user {
+    background: rgba(2, 132, 199, 0.15);
+    border-color: rgba(2, 132, 199, 0.4);
+}
+.light-theme .username { color: #0f172a; }
+.light-theme .solved,
+.light-theme .penalty { color: #475569; }
+.light-theme .table-header { color: #475569; border-color: rgba(2, 132, 199, 0.2); }
+.light-theme .no-problems,
+.light-theme .no-participants { color: #64748b; }

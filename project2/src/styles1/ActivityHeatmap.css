@@ -306,3 +306,67 @@
         font-size: 1.5rem;
     }
 }
+
+/* ── Light Theme Overrides ──────────────────────────────────────────────── */
+.light-theme .stat-card {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.light-theme .stat-card:hover {
+    box-shadow: 0 8px 24px rgba(2, 132, 199, 0.15);
+}
+
+/* Icon box stays gradient — just ensure icon color is white (already is) */
+.light-theme .stat-icon {
+    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
+    color: white !important;
+}
+.light-theme .stat-icon svg {
+    color: white !important;
+    stroke: white !important;
+}
+
+.light-theme .stat-value { color: #0284c7; }
+.light-theme .stat-label { color: #475569; }
+
+.light-theme .heatmap-section {
+    background: #ffffff;
+    border: 1px solid rgba(2, 132, 199, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.light-theme .heatmap-header h3 { color: #0284c7; }
+.light-theme .heatmap-legend { color: #475569; }
+
+.light-theme .legend-box {
+    border-color: rgba(2, 132, 199, 0.2);
+}
+
+.light-theme .day-label { color: #94a3b8; }
+
+.light-theme .heatmap-day {
+    border-color: rgba(2, 132, 199, 0.08);
+}
+.light-theme .heatmap-day:hover {
+    border-color: #0284c7;
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+}
+
+.light-theme .heatmap-footer {
+    border-top-color: rgba(2, 132, 199, 0.15);
+}
+.light-theme .footer-label { color: #64748b; }
+.light-theme .footer-value { color: #0284c7; }
+
+.light-theme .heatmap-tooltip {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.light-theme .tooltip-date { color: #0284c7; }
+.light-theme .tooltip-stats { color: #475569; }
+.light-theme .tooltip-separator { color: #94a3b8; }
+
+.light-theme .heatmap-loading p,
+.light-theme .heatmap-error p { color: #64748b; }

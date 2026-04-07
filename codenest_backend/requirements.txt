@@ -5,3 +5,4 @@ django-cors-headers
 requests
 python-dotenv
 docker
+beautifulsoup4

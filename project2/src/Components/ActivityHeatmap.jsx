@@ -36,8 +36,20 @@ function ActivityHeatmap({ userId }) {
     };
 
     const getColorForLevel = (level) => {
+        const isLight = document.documentElement.classList.contains('light-theme') ||
+                        document.body.classList.contains('light-theme');
+        if (isLight) {
+            const colors = [
+                '#e2e8f0', // 0 - no activity (light gray)
+                '#bfdbfe', // 1 - low (light blue)
+                '#3b82f6', // 2 - medium
+                '#2563eb', // 3 - high
+                '#1d4ed8'  // 4 - very high
+            ];
+            return colors[Math.min(level, 4)];
+        }
         const colors = [
-            '#0f172a', // 0 - no activity
+            '#1e293b', // 0 - no activity (dark)
             '#1e3a5f', // 1 - low
             '#2563eb', // 2 - medium
             '#3b82f6', // 3 - high
