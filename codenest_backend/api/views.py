@@ -2814,10 +2814,25 @@ def send_otp(request):
 
     # Send via Gmail SMTP (configured in .env)
     try:
-        send_mail(subject, message, None, [email], fail_silently=False)
+        from django.core.mail import get_connection
+        
+        # Create connection with timeout
+        connection = get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            timeout=10  # 10 second timeout
+        )
+        
+        send_mail(
+            subject, 
+            message, 
+            None, 
+            [email], 
+            fail_silently=False,
+            connection=connection
+        )
     except Exception as e:
         logger.error(f"Failed to send OTP email to {email}: {e}", exc_info=True)
-        return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
+        return Response({"error": "Failed to send email. Please try again or contact support."}, status=500)
 
     return Response({"message": "OTP sent successfully."})
 

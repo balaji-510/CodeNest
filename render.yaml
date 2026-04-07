@@ -4,7 +4,7 @@ services:
     name: codenest-backend
     env: python
     buildCommand: "cd codenest_backend && pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
-    startCommand: "cd codenest_backend && gunicorn codenest_backend.wsgi:application"
+    startCommand: "cd codenest_backend && gunicorn codenest_backend.wsgi:application --timeout 120 --workers 2"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
