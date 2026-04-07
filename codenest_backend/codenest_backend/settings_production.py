@@ -7,7 +7,11 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # Allowed hosts
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
+if allowed_hosts:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',') if host.strip()]
+else:
+    ALLOWED_HOSTS = []
 
 # Database - PostgreSQL on Render
 DATABASES = {
@@ -18,8 +22,30 @@ DATABASES = {
 }
 
 # CORS settings for production
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if cors_origins:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = []
+
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+# Additional CORS headers
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# CSRF trusted origins (required for Django 4.0+)
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # Static files
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
