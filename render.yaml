@@ -2,10 +2,9 @@ services:
   # Backend Web Service
   - type: web
     name: codenest-backend
-    runtime: python
-    rootDirectory: codenest_backend
-    buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "gunicorn codenest_backend.wsgi:application"
+    env: python
+    buildCommand: "cd codenest_backend && chmod +x build.sh && ./build.sh"
+    startCommand: "cd codenest_backend && gunicorn codenest_backend.wsgi:application"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
@@ -39,10 +38,9 @@ services:
   # Frontend Static Site
   - type: web
     name: codenest-frontend
-    runtime: static
-    rootDirectory: project2
-    buildCommand: "npm install && npm run build"
-    staticPublishPath: ./dist
+    env: static
+    buildCommand: "cd project2 && npm install && npm run build"
+    staticPublishPath: ./project2/dist
     envVars:
       - key: VITE_API_URL
         sync: false
